@@ -39,6 +39,7 @@ These related and interdependent tools are packaged together in a single ‘Biod
 The tools operate on spatial raster data stored in ESRI's floating point file format (.flt, .hdr) however GeoTiff support is gradually being implemented across tools along with other improvements as time permits. Each of the console applications process plain text parameter (.par) files defining inputs, outputs and parameters. Template parameter files containing parameter descriptions can be created by passing the applications a parameter filename that doesn’t already exist. 
 
 Whilst originally developed and maintained for the Windows OS environment only, a cmake build system (https://cmake.org/) has recently been adopted and the software has been modified to build and run in both Windows and Linux environments. Development and testing in Linux is still ongoing. 
+
 The software is written using features from the ISO C++17 standard and relies on the following 3rd party software libraries for various functionality.
 
 * GDAL https://gdal.org/index.html https://gdal.org/license.html
@@ -48,6 +49,21 @@ The software is written using features from the ISO C++17 standard and relies on
 All tools except Spatial Links require a CUDA compatible Nvidia graphics processing (GPU) device (graphics card). A list of compatible devices can be found at:
 
 https://developer.nvidia.com/cuda-gpus
+
+
+## Building the software
+
+TODO
+
+
+## Access
+
+
+The software package is available via SEED, the NSW Government’s central resource for Sharing and Enabling Environmental Data:
+
+https://datasets.seed.nsw.gov.au/dataset/nsw-biodiversity-modelling-tools (TBA)
+
+
 
 ## Copyright
 
