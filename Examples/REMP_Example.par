@@ -1,11 +1,11 @@
 
 [INPUTS]
-HAB_FN0=Data\habitat
+HAB_FN0=Data/habitat
 DOSTDHAB=true
 
 [WINDOW]
-LOOKUP_FN=Petals\petals41_7_25_lookup.txt
-TRANSLATE_FN=Petals\petals41_7_25_translate.txt
+LOOKUP_FN=Petals/petals41_7_25_lookup.txt
+TRANSLATE_FN=Petals/petals41_7_25_translate.txt
 
 [SPECIES]
 MVH=100
@@ -19,7 +19,7 @@ LAMBDA=1.0
 C=1.0
 
 [ANALYSIS]
-WORKDIR=Data\REMP
+WORKDIR=Data/REMP
 DOMCALCS=true
 ITERATIONS=5
 DEBUG=true

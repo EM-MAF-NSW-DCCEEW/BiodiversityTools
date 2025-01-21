@@ -1,14 +1,14 @@
 
 [INPUTS]
-HAB_FN=Data\habitat
-PRM_FN=Data\cost
+HAB_FN=Data/habitat
+PRM_FN=Data/cost
 
 [OUTPUTS]
-EHA_FN=Data\EHA\EHA
+EHA_FN=Data/EHA/EHA
 
 [WINDOW]
-LOOKUP_FN=Petals\petals41_7_25_lookup.txt
-TRANSLATE_FN=Petals\petals41_7_25_translate.txt
+LOOKUP_FN=Petals/petals41_7_25_lookup.txt
+TRANSLATE_FN=Petals/petals41_7_25_translate.txt
 
 [ANALYSIS]
 MULTFOCAL=false
