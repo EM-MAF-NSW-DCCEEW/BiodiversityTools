@@ -1,0 +1,11 @@
+# Add subdirectory for each console application
+add_subdirectory(BenefitsCBA)
+add_subdirectory(BFT)
+add_subdirectory(CalcEHA)
+add_subdirectory(ContextCBA)
+add_subdirectory(CreateCBAPetals)
+add_subdirectory(CreateCBASegments)
+add_subdirectory(LinksCompleteSampling)
+add_subdirectory(LinksRandomSampling)
+add_subdirectory(OccupancyCBA)
+add_subdirectory(REMP)
