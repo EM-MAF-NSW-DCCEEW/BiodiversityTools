@@ -5,7 +5,7 @@ The EMT are part of the Science Impact and Assessment Branch in the New South Wa
 
 Biodiversity modelling tools including software and code developed and maintained by the EMT and used by DCCEEW in NSW are being published here in the hope that they may have broader application within and beyond NSW. 
 
-All software and code are Copyright(C) 2025 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW) and are published here under version 3 of the GNU General Public Licence.
+All software and code are Copyright(C) 2024 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW) and are published here under version 3 of the GNU General Public Licence.
 
 All software and code are provided in the hope that they will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -67,7 +67,7 @@ https://datasets.seed.nsw.gov.au/dataset/nsw-biodiversity-modelling-tools (TBA)
 
 ## Copyright
 
-All software and code are Copyright(C) 2025 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW) and are published here under version 3 of the GNU General Public Licence.
+All software and code are Copyright(C) 2024 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW) and are published here under version 3 of the GNU General Public Licence.
 
 
 ## Licence
