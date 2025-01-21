@@ -54,10 +54,10 @@ https://developer.nvidia.com/cuda-gpus
 ## Building the software
 
 The minimum requirements to build Biodiversity Tools are:
-- CMake >= 3.11, and an associated build system (make, ninja, Visual Studio, etc.)
+- CMake version >= 3.11, and an associated build system (make, ninja, Visual Studio, etc.)
 - C++17 compiler 
-- GDAL version >= 3.5 (Earlier versions may work. See https://gdal.org/en/stable/development/cmake.html)
-- CUDA Toolkit version 11.8 (Earlier versions may work) 
+- GDAL version >= 3.5 (earlier versions may work. See https://gdal.org/en/stable/development/cmake.html)
+- CUDA Toolkit version >= 11.8 (earlier versions may work) 
 
 Biodiversity Tools is implementing a CMake build system. With the CMake build system you should be able to compile and install Biodiversity Tools on any platform. After unpacking or cloning the source repository.
 step into the source tree:
