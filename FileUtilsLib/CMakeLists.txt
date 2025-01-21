@@ -13,12 +13,12 @@ find_package(GDAL REQUIRED)
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.cpp)
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS *.h)
 
-if (MSVC)
+#Not sure what's best, add_compile_option() or set_property()
+if (WIN32)
 	add_compile_options("$<$<CONFIG:RELEASE>:/O2>")
-else()
+elseif(UNIX AND NOT APPLE)
 	add_compile_options("-march=native" "-fPIC" "$<$<CONFIG:RELEASE>:-O3>")
 endif()
-
 
 add_library(FileUtilsLib STATIC ${source} ${headers})
 

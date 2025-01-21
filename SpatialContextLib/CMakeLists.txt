@@ -17,14 +17,13 @@ file(GLOB_RECURSE cuHeaders CONFIGURE_DEPENDS *.cuh)
 
 add_library(SpatialContextLib SHARED ${source} ${headers} ${cuSource} ${cuHeaders})
 
+#Not sure what's best, add_compile_option() or set_property()
 set_property(TARGET SpatialContextLib PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if(WIN32)
     set_property(TARGET SpatialContextLib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
     set_property(TARGET SpatialContextLib PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-endif()
-
-if(UNIX AND NOT APPLE)
+elseif(UNIX AND NOT APPLE)
     set_property(TARGET SpatialContextLib PROPERTY CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 endif()
 
