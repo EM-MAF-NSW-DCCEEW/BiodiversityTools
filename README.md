@@ -78,7 +78,7 @@ cmake --build . --config Release
 
 Biodiversity Tools has been built successfully under Windows 10 using Visual Studio 2022, CUDA 12.5 and vcpkg (https://vcpkg.io/en/) to manage the required GDAL libraries. 
 ```
-cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg.cmake ..
+cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg.cmake -DCMAKE_CUDA_ARCHITECTURES=native ..
 ```
 
 Biodiversity Tools has been built successfully under Linux (5.14.21-150500.55.83-default x86_64) using g++ 11.2.0, CUDA 11.8 and GDAL 3.4.1 libraries. 
