@@ -1,7 +1,7 @@
 
 [INPUTS]
 HAB_FN=Data/habitat
-PRM_FN=Data/cost
+PRM_FN=Data/perm
 
 [OUTPUTS]
 NHA_FN=Data/Context/context
