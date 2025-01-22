@@ -2,7 +2,7 @@
 [INPUTS]
 HAB_FN=Data/habitat
 PRM_FN=Data/cost
-MBV_FN=Data/MBV
+MBV_FN=Data/mbv
 ALTGRIDS=false
 ALTHAB=1.0
 ALTPRM=0.995
