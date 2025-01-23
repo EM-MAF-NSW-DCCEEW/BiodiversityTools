@@ -76,7 +76,7 @@ struct LinksParams {
 	double maxED;
 	
 	//Random sampling search parameters
-	std::string habGFN, lnkGFN, pntGFN;
+	std::string habGFN, cstGFN, lnkGFN, pntGFN;
 	std::string  pointPairsTabFN;
 	bool havePointPairsTabFN;
 	bool pointPairsTabExists;
@@ -89,7 +89,7 @@ struct LinksParams {
 	float P;
 	std::vector<PointPair> pointPairs;
 
-	double pairDistSqrdMin, pairDistSqrdMax;
+	double minPairDistSqrd, maxPairDistSqrd;
 		
 	double d_i, d_a;
 

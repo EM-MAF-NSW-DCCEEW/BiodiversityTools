@@ -24,15 +24,16 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "LinksRandomSampling.h"
 #include <sstream>
 #include <ctime>
+#include <random>
 
 int LinksRandomSampling(std::string paramFN, LinksParams &p) {
 
-	std::string habGFN, cstGFN, pntGFN, lnkGFN, cxtGFN, outParamFN;
+	std::string outParamFN;
 
 	//Cost grid FN is required
-	if (!GetParam(paramFN, "INPUTS", "CostGrid", cstGFN)) msgErrorStr(-1, "CostGrid", paramFN);
+	if (!GetParam(paramFN, "INPUTS", "CostGrid", p.cstGFN)) msgErrorStr(-1, "CostGrid", paramFN);
 	//Habitat grid FN is optional
-	p.useHabGrid = GetParam(paramFN, "INPUTS", "HabGrid", habGFN);
+	p.useHabGrid = GetParam(paramFN, "INPUTS", "HabGrid", p.habGFN);
 	//Point pairs table FN is optional
 	p.havePointPairsTabFN = GetParam(paramFN, "INPUTS", "PointTab", p.pointPairsTabFN);
 	//Links grid FN is required
@@ -40,7 +41,7 @@ int LinksRandomSampling(std::string paramFN, LinksParams &p) {
 	//Point grid FN is optional
 	p.writePointGrid = GetParam(paramFN, "OUTPUTS", "PointGrid", p.pntGFN);
 	//Maximum pair distance is required
-	if (!GetParam(paramFN, "SEARCH", "MaxPairDist", p.maxPairDist)) msgErrorStr(-1, "SearchRadius", paramFN);
+	if (!GetParam(paramFN, "SEARCH", "MaxPairDist", p.maxPairDist)) msgErrorStr(-1, "MaxPairDist", paramFN);
 	//Minimum habitat threshold is requred
 	if (!GetParam(paramFN, "SEARCH", "MinHabThreshold", p.habMin)) msgErrorStr(-1, "MinHabThreshold", paramFN);
 	//Maximum effective distance is optional
@@ -50,8 +51,8 @@ int LinksRandomSampling(std::string paramFN, LinksParams &p) {
 	//Probability factor is optional, default is 1.0
 	if (!GetParam(paramFN, "SEARCH", "ProbabilityFactor", p.P)) p.P = 1.0;
 
-	p.pairDistSqrdMax = p.maxPairDist * p.maxPairDist;
-	p.pairDistSqrdMin = 0;
+	p.maxPairDistSqrd = p.maxPairDist * p.maxPairDist;
+	p.minPairDistSqrd = 0;
 
 	//Decay I is requried 
 	if (!GetParam(paramFN, "DECAY", "I", p.d_i)) msgErrorStr(-1, "I", paramFN);
@@ -65,16 +66,16 @@ int LinksRandomSampling(std::string paramFN, LinksParams &p) {
 	p.useMTProcessing = GetParam(paramFN, "OPTIONS", "nthreads", p.nThreads);
 
 	//Open cost grid
-	p.cstGS.open(cstGFN);
-	if (!p.cstGS.is_open()) return msgErrorStr(-3, cstGFN);
+	p.cstGS.open(p.cstGFN);
+	if (!p.cstGS.is_open()) return msgErrorStr(-3, p.cstGFN);
 	p.cstGS.getHeader(p.nCols, p.nRows, p.xll, p.yll, p.cellSize, p.noData);
 	p.nCells = p.nCols * p.nRows;
 
 	//Open hab grid if using
 	if (p.useHabGrid) {
-		p.habGS.open(habGFN);
-		if (!p.habGS.is_open()) return msgErrorStr(-3, habGFN);
-		if (!p.habGS.compareHeader(p.cstGS)) return msgErrorStr(-7, habGFN, cstGFN);
+		p.habGS.open(p.habGFN);
+		if (!p.habGS.is_open()) return msgErrorStr(-3, p.habGFN);
+		if (!p.habGS.compareHeader(p.cstGS)) return msgErrorStr(-7, p.habGFN, p.cstGFN);
 	}
 
 	//Read or create point pairs
@@ -93,7 +94,7 @@ int LinksRandomSampling(std::string paramFN, LinksParams &p) {
 
 
 	//p.pntGS.close();
-	p.habGS.open(habGFN);
+	p.habGS.open(p.habGFN);
 
 	int result = 0;
 	if (p.useMTProcessing) {
@@ -293,18 +294,21 @@ int LoadPointPairs(LinksParams &p) {
 
 
 int CreatePointPairs(LinksParams &p) {
-	msgString("Creating " + toStr(p.nPointPairs) + "Point Pairs");
-	srand(uint(time(NULL)));
-
-	//std::ofstream pointPairsFS;
-	p.habGS.open(p.habGFN);
-	//if (!p.habGS.is_open()) return msgErrorStr(-3, habGFN);
-
+	msgString("Creating " + toStr(p.nPointPairs) + " Point Pairs\n");
+	//srand(uint(time(NULL)));
 	//if (p.writePointGrid)
 	//{
 	//	p.pntGS.open(p.pntGFN);
 	//	p.pntGS.copyHeader(p.cstGS);
 	//}
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<> dis(0.0, 1.0);
+	std::uniform_int_distribution<> disInt(0, RAND_MAX);
+
+	p.habGS.open(p.habGFN);
+	//if (!p.habGS.is_open()) return msgErrorStr(-3, p.habGFN);
 
 	std::ofstream pointPairsOFS;
 	if (p.havePointPairsTabFN) {
@@ -314,10 +318,9 @@ int CreatePointPairs(LinksParams &p) {
 
 	//Sample points > habMin to make vector of points
 	//TODO Create point grid?
-	msgText("Sampling points");
+	msgString("Sampling points\n");
 	std::vector<float> habRow(p.nCols, 0);
 	//std::vector<float> pntRow(p.nCols, 0);
-	//std::vector<float> zeroRow(p.nCols, 0);
 	std::vector<int2> points;
 
 	for (int y = 0; y < p.nRows; y++) {
@@ -326,10 +329,10 @@ int CreatePointPairs(LinksParams &p) {
 		//std::fill(pntRow.begin(), pntRow.end(), 0);
 
 		for (int x = 0; x < p.nCols; x++) {
-			//TODO use C++ random generator?
+			
 			if (habRow[x] != float(p.habGS.noData()) &&
 				habRow[x] >= p.habMin && 
-				habRow[x] * p.P > float(rand()) / RAND_MAX) 
+				habRow[x] * p.P > dis(gen))
 			{
 				points.push_back({ x, y });
 				//pntRow[x] = 1;
@@ -338,30 +341,34 @@ int CreatePointPairs(LinksParams &p) {
 
 		//if (p.writePointGrid)
 		//	p.pntGS.write((const char*) pntRow.data(), sizeof(float) * p.nCols);
-	}	
-	msgText("\rPercent complete: 100");
+	}
+
+	msgString("\rPercent complete: 100\n");
+	msgString("Number of points: " + toStr(points.size()) + "\n");
+
 	p.habGS.close();
 
 	//Pair up points that are within distance
-	msgText("Pairing points");
+	msgString("Pairing points\n");
 	int p1, p2;
 	double pairDistSqrd;
 
 	for (int n = 0; n < p.nPointPairs; n++) {
 		msgProgress("Percent complete: ", n * 100 / p.nPointPairs);
 		do {
-			//TODO use C++ random generator?
-			p1 = int(double(rand()) / RAND_MAX * points.size()) - 1;
-			p2 = int(double(rand()) / RAND_MAX * points.size()) - 1;
+			p1 = disInt(gen) % points.size();
+			p2 = disInt(gen) % points.size();
 
 			pairDistSqrd =
 				std::pow(points[p1].x - points[p2].x, 2.0) +
 				std::pow(points[p1].y - points[p2].y, 2.0);
 
-		} while (p1 == p2 || pairDistSqrd < p.pairDistSqrdMin || pairDistSqrd > p.pairDistSqrdMax);
-		p.pointPairs.push_back({points[p1], points[p2]});
+		} while (p1 == p2 || pairDistSqrd < p.minPairDistSqrd || pairDistSqrd > p.maxPairDistSqrd);
+		p.pointPairs.push_back({ points[p1], points[p2] });
 	}
-	msgText("\rPercent complete: 100");
+
+	msgString("\rPercent complete: 100\n");
+	msgString("Number of point pairs: " + toStr(p.pointPairs.size()) + "\n");
 
 	//Write tab seperated values without header:
 	if (p.havePointPairsTabFN) {
