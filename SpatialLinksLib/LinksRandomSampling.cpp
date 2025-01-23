@@ -28,7 +28,6 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 
 int LinksRandomSampling(std::string paramFN, LinksParams &p) {
 
-	std::string outParamFN;
 
 	//Cost grid FN is required
 	if (!GetParam(paramFN, "INPUTS", "CostGrid", p.cstGFN)) msgErrorStr(-1, "CostGrid", paramFN);
@@ -259,7 +258,7 @@ int LinksRandomSampling_ST(LinksParams &p) {
 	}//End for loop
 
 	 //Save output and cleanup
-	msgString("Finished Processing\n");
+	msgString("\rFinished Processing\n");
 	msgString("Paths completed: " + toStr(pathsCompleted) + "\n");
 	msgString("Paths failed: " + toStr(pathsFailed) + "\n");
 
@@ -305,10 +304,9 @@ int CreatePointPairs(LinksParams &p) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<> dis(0.0, 1.0);
-	std::uniform_int_distribution<> disInt(0, RAND_MAX);
 
 	p.habGS.open(p.habGFN);
-	//if (!p.habGS.is_open()) return msgErrorStr(-3, p.habGFN);
+	if (!p.habGS.is_open()) return msgErrorStr(-3, p.habGFN);
 
 	std::ofstream pointPairsOFS;
 	if (p.havePointPairsTabFN) {
@@ -353,12 +351,15 @@ int CreatePointPairs(LinksParams &p) {
 	int p1, p2;
 	double pairDistSqrd;
 
+	std::uniform_int_distribution<> disInt(0, points.size() - 1);
+
 	for (int n = 0; n < p.nPointPairs; n++) {
 		msgProgress("Percent complete: ", n * 100 / p.nPointPairs);
 		do {
-			p1 = disInt(gen) % points.size();
-			p2 = disInt(gen) % points.size();
-
+			p1 = disInt(gen);//% points.size();
+			p2 = disInt(gen);//% points.size();
+			//msgString("p1: " + toStr(p1) + " p2: " + toStr(p2) + "\n");
+			
 			pairDistSqrd =
 				std::pow(points[p1].x - points[p2].x, 2.0) +
 				std::pow(points[p1].y - points[p2].y, 2.0);
