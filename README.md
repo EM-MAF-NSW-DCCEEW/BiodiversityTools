@@ -91,7 +91,7 @@ EMT is unable to provide additional support for building the software under diff
 
 ## Running the software
 
-The software once built consists of a set of console applications and supporting library files. Each console application takes the path of a parameter file as its command line argument.  The parameter is processed if it exists otherwise it is created as a template.
+The software once built consists of a set of console applications and supporting library files. Each console application takes the path of a parameter file as its command line argument.  The parameter file is processed if it exists otherwise it is created as a template.
 
 
 ## Examples
