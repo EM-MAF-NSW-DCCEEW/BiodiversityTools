@@ -20,6 +20,10 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 //Notes
 //TODO 
 //Standardise parameter file format
+//CreatePointPairs writes point grid
+//PointTab is either input or output parameter
+//Is it time to save
+
 
 #include "LinksRandomSampling.h"
 #include <sstream>
@@ -294,16 +298,14 @@ int LoadPointPairs(LinksParams &p) {
 
 int CreatePointPairs(LinksParams &p) {
 	msgString("Creating " + toStr(p.nPointPairs) + " Point Pairs\n");
-	//srand(uint(time(NULL)));
+
 	//if (p.writePointGrid)
 	//{
 	//	p.pntGS.open(p.pntGFN);
 	//	p.pntGS.copyHeader(p.cstGS);
 	//}
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dis(0.0, 1.0);
+	std::mt19937 gen(std::random_device());
 
 	p.habGS.open(p.habGFN);
 	if (!p.habGS.is_open()) return msgErrorStr(-3, p.habGFN);
@@ -321,6 +323,8 @@ int CreatePointPairs(LinksParams &p) {
 	//std::vector<float> pntRow(p.nCols, 0);
 	std::vector<int2> points;
 
+	std::uniform_real_distribution<> uniformReals(0.0, 1.0);
+
 	for (int y = 0; y < p.nRows; y++) {
 		msgProgress("Percent complete: ", y * 100 / p.nRows);
 		p.habGS.read((char *)habRow.data(), sizeof(float) * p.nCols);
@@ -330,7 +334,7 @@ int CreatePointPairs(LinksParams &p) {
 			
 			if (habRow[x] != float(p.habGS.noData()) &&
 				habRow[x] >= p.habMin && 
-				habRow[x] * p.P > dis(gen))
+				habRow[x] * p.P > uniformReals(gen))
 			{
 				points.push_back({ x, y });
 				//pntRow[x] = 1;
@@ -351,15 +355,14 @@ int CreatePointPairs(LinksParams &p) {
 	int p1, p2;
 	double pairDistSqrd;
 
-	std::uniform_int_distribution<> disInt(0, points.size() - 1);
+	std::uniform_int_distribution<> uniformInts(0, points.size() - 1);
 
 	for (int n = 0; n < p.nPointPairs; n++) {
 		msgProgress("Percent complete: ", n * 100 / p.nPointPairs);
 		do {
-			p1 = disInt(gen);//% points.size();
-			p2 = disInt(gen);//% points.size();
-			//msgString("p1: " + toStr(p1) + " p2: " + toStr(p2) + "\n");
-			
+			p1 = uniformInts(gen);//% points.size();
+			p2 = uniformInts(gen);//% points.size();
+
 			pairDistSqrd =
 				std::pow(points[p1].x - points[p2].x, 2.0) +
 				std::pow(points[p1].y - points[p2].y, 2.0);
