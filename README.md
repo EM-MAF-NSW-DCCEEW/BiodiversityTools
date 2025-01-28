@@ -1,4 +1,4 @@
-# BiodiversityTools
+# Biodiversity Tools
 A suite of spatial biodiversity modelling tools including software and code developed and maintained by NSW DCCEEW's Metrics and Forecasting Ecological Modelling Team (EMT). 
 
 The EMT are part of the Science Impact and Assessment Branch in the New South Wales (NSW) Department of Climate Change, Energy, the Environment and Water’s (DCCEEW’s) Science and Insights Division. EMT deliver spatial biodiversity modelling methods, tools and information used to assess and improve biodiversity outcomes in NSW, Australia. 
