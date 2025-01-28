@@ -91,7 +91,7 @@ EMT is unable to provide additional support for building the software under diff
 
 ## Running the software
 
-The software once built consists of a set of console applications and supporting library files. Each console application takes the path of a parameter file as its command line argument.  The parameter file is processed if it exists otherwise it is created as a template.
+The software once built consists of a set of console applications and supporting library files. Each application takes the path of a parameter file as its command line argument. The parameter file is processed if it exists otherwise it is created as a template. Template parameter files for each application list all required and optional parameters with brief descriptions.
 
 
 ## Examples
@@ -99,7 +99,7 @@ The software once built consists of a set of console applications and supporting
 Simple example parameter files and data are provided in the Examples folder. These can be used to test software compilation and execution and explore different parameter settings for each of the console applications. This data is also being used to test changes to the code. 
 
 
-## Access
+## Software access
 
 The software package will be made available via SEED, the NSW Government’s central resource for Sharing and Enabling Environmental Data:
 
