@@ -30,21 +30,6 @@ Add region name lookup table
 #include "SpatialContextLib.h"
 #include "BDIForRegions.h"
 
-#ifdef _MSC_VER
-	#if _MSC_VER < 1910
-		#include <boost\filesystem.hpp>
-		namespace fileSys = boost::filesystem;
-	#elif _MSC_VER < 1920
-		#include <filesystem>
-		namespace fileSys = std::experimental::filesystem;
-	#else
-		#include <filesystem>
-		namespace fileSys = std::filesystem;
-	#endif
-#else
-	#include <filesystem>
-	namespace fileSys = std::filesystem;
-#endif
 
 int RunBFT(std::string paramFN);
 
@@ -200,11 +185,11 @@ int RunBFT(std::string paramFN) {
 	bool useBDIData = doBDIAndMBV && GetParam(paramFN, "ASSESSMENT", "BDI_DATA", BDIDataFN);
 	bool useAltOHAData = doBDIAndMBV && GetParam(paramFN, "ASSESSMENT", "ALT_OHA_DATA", altOHADataFN);
 
-	if (createBDITable && !GetFilesFolder(bdiTabFN, tmpDir)) bdiTabFN = workDir + "\\" + bdiTabFN;
-	if (createMBVTable && !GetFilesFolder(mbvTabFN, tmpDir)) mbvTabFN = workDir + "\\" + mbvTabFN;
-	if (createMBVGrid && !GetFilesFolder(mbvFN, tmpDir)) mbvFN = workDir + "\\" + mbvFN;
+	if (createBDITable && !GetFilesFolder(bdiTabFN, tmpDir)) bdiTabFN = workDir + pathSep + bdiTabFN;
+	if (createMBVTable && !GetFilesFolder(mbvTabFN, tmpDir)) mbvTabFN = workDir + pathSep + mbvTabFN;
+	if (createMBVGrid && !GetFilesFolder(mbvFN, tmpDir)) mbvFN = workDir + pathSep + mbvFN;
 	
-	BDIDataFN = workDir + "\\" + BDIDataFN;
+	BDIDataFN = workDir + pathSep + BDIDataFN;
 
 	std::vector<std::string> benefits;
 	if (GetParam(paramFN, "ASSESSMENT", "BENEFITS", benefits)) doBenefits = true;
@@ -225,7 +210,7 @@ int RunBFT(std::string paramFN) {
 
 		//Create permeability grid
 		if (createPrmGrid) {
-			prmFN = workDir + "\\prm";
+			prmFN = workDir + pathSep + "prm";
 			if (distMin > 0.0f) prmMin = std::exp(-(cellSize < 1.0 ? cellSize * 100000 : cellSize) / distMin);
 			if (distMax > 0.0f) prmMax = std::exp(-(cellSize < 1.0 ? cellSize * 100000 : cellSize) / distMax);
 			std::cout << "Creating permeability grid " << prmFN << " with values from " << prmMin << " to " << prmMax << "\n";
@@ -236,7 +221,7 @@ int RunBFT(std::string paramFN) {
 
 	//Run EHA
 	if (createEHAGrid) {
-		ehaFN = std::string(workDir + "\\eha");
+		ehaFN = std::string(workDir + pathSep + "eha");
 		std::string ehaParamFN(ehaFN + ".par");
 
 		std::cout << "Creating EHA parameter file: " << ehaParamFN << "\n";
@@ -258,7 +243,7 @@ int RunBFT(std::string paramFN) {
 
 	//Run BDI and MBV
 	if (doBDIAndMBV) {
-		std::string bdiParamFN(workDir + "\\bdi.par");
+		std::string bdiParamFN(workDir + pathSep + "bdi.par");
 
 		std::cout << "Creating BDI parameter file: " << bdiParamFN << "\n";
 		if (!SetParam(bdiParamFN, "BDI", "HAB_FN", habFN) ||
@@ -302,7 +287,7 @@ int RunBFT(std::string paramFN) {
 
 			if (!GetParam(paramFN, benefit, "BEN_FN", benFN)) benFN = benefit;
 			if (!GetParam(paramFN, benefit, "MBV_FN", benMBVFN)) benMBVFN = mbvFN;
-			if (!GetFilesFolder(benFN, benDir)) benFN = workDir + "\\" + benFN;
+			if (!GetFilesFolder(benFN, benDir)) benFN = workDir + pathSep + benFN;
 			std::string benParamFN(benFN + ".par");
 
 			std::cout << "Creating benefits parameter file: " << benParamFN << "\n";

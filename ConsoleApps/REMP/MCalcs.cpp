@@ -28,21 +28,6 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "FileUtilsLib.h"
 #include "SpatialContextLib.h"
 
-#ifdef _MSC_VER
-#if _MSC_VER < 1910
-#include <boost\filesystem.hpp>
-namespace fileSys = boost::filesystem;
-#elif _MSC_VER < 1920
-#include <filesystem>
-namespace fileSys = std::experimental::filesystem;
-#else
-#include <filesystem>
-namespace fileSys = std::filesystem;
-#endif
-#else
-#include <filesystem>
-namespace fileSys = std::filesystem;
-#endif
 
 //Creates MCalcs input grids then runs REMP CBA to calculate lambda and c
 int RunMCalcs(const char *paramFN)
@@ -68,10 +53,10 @@ int RunMCalcs(const std::string & paramFN)
 	if (!GetParam(paramFN, "ANALYSIS", "WORKDIR", workDir) && !GetFilesFolder(paramFN, workDir)) workDir = ".";
 
 	if (preFN.length() > 0 && preFN.back() != '_') preFN += '_';
-	std::string habFN = workDir + "\\" + preFN + "MCalcs_Habitat";
-	std::string prmFN = workDir + "\\" + preFN + "MCalcs_Permeability";
-	std::string occFN = workDir + "\\" + preFN + "MCalcs_Occupancy";
-	std::string mpcFN = workDir + "\\" + preFN + "MCalcs_MPC";
+	std::string habFN = workDir + pathSep + preFN + "MCalcs_Habitat";
+	std::string prmFN = workDir + pathSep + preFN + "MCalcs_Permeability";
+	std::string occFN = workDir + pathSep + preFN + "MCalcs_Occupancy";
+	std::string mpcFN = workDir + pathSep + preFN + "MCalcs_MPC";
 
 	//Create output folders if they don't already exist
 	if (!(fileSys::is_directory(fileSys::path(workDir))) && !(fileSys::create_directories(fileSys::path(workDir))))
@@ -164,17 +149,17 @@ int RunMCalcsTriLambda(const std::string & paramFN)
 
 	
 	if (preFN.length() > 0 && preFN.back() != '_') preFN += '_';
-	std::string hrDir = workDir + "\\Homerange";
-	std::string drDir = workDir + "\\Dispersal";
-	std::string hrHabFN = hrDir + "\\" + preFN + "MCalcs_HR_Habitat";
-	std::string hrPrmFN = hrDir + "\\" + preFN + "MCalcs_HR_Permeability";
-	std::string hrNHAFN = hrDir + "\\" + preFN + "MCalcs_HR_NHA";
-	std::string hrMPCFN = hrDir + "\\" + preFN + "MCalcs_HR_MPC";
-	std::string drHabFN = drDir + "\\" + preFN + "MCalcs_DR_Habitat";
-	std::string drPrmFN = drDir + "\\" + preFN + "MCalcs_DR_Permeability";
-	std::string drNHAFN = drDir + "\\" + preFN + "MCalcs_DR_NHA";
-	std::string drOccFN = drDir + "\\" + preFN + "MCalcs_DR_Occupancy";
-	std::string drMPCFN = drDir + "\\" + preFN + "MCalcs_DR_MPC";
+	std::string hrDir = workDir + pathSep + "Homerange";
+	std::string drDir = workDir + pathSep + "Dispersal";
+	std::string hrHabFN = hrDir + pathSep + preFN + "MCalcs_HR_Habitat";
+	std::string hrPrmFN = hrDir + pathSep + preFN + "MCalcs_HR_Permeability";
+	std::string hrNHAFN = hrDir + pathSep + preFN + "MCalcs_HR_NHA";
+	std::string hrMPCFN = hrDir + pathSep + preFN + "MCalcs_HR_MPC";
+	std::string drHabFN = drDir + pathSep + preFN + "MCalcs_DR_Habitat";
+	std::string drPrmFN = drDir + pathSep + preFN + "MCalcs_DR_Permeability";
+	std::string drNHAFN = drDir + pathSep + preFN + "MCalcs_DR_NHA";
+	std::string drOccFN = drDir + pathSep + preFN + "MCalcs_DR_Occupancy";
+	std::string drMPCFN = drDir + pathSep + preFN + "MCalcs_DR_MPC";
 
 	//Create output folders if they don't already exist
 	if (!(fileSys::is_directory(fileSys::path(workDir))) && !(fileSys::create_directories(fileSys::path(workDir))))
@@ -212,7 +197,7 @@ int RunMCalcsTriLambda(const std::string & paramFN)
 		if (!ApplyLambdaToGrid(hrHabFN, F2FLAMBDA(float(x * (mvh / habSum));))) return msgErrorStr(-4, hrHabFN);
 	}
 
-	std::string hrParamFN(hrDir + "\\" + preFN + "homerange.par");
+	std::string hrParamFN(hrDir + pathSep + preFN + "homerange.par");
 	if (doHRIterations) {
 		if (!SetParam(hrParamFN, "INPUTS", "HAB_FN0", hrHabFN) ||
 			!SetParam(hrParamFN, "INPUTS", "PRM_FN0", hrPrmFN) ||

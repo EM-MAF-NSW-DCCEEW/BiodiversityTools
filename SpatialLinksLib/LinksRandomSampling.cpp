@@ -304,8 +304,8 @@ int CreatePointPairs(LinksParams &p) {
 	//	p.pntGS.open(p.pntGFN);
 	//	p.pntGS.copyHeader(p.cstGS);
 	//}
-
-	std::mt19937 gen(std::random_device());
+	std::random_device rd;
+	std::mt19937 gen(rd());
 
 	p.habGS.open(p.habGFN);
 	if (!p.habGS.is_open()) return msgErrorStr(-3, p.habGFN);

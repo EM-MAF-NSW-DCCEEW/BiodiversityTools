@@ -25,22 +25,6 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "SpatialContextLib.h"
 #include "MCalcs.h"
 
-#ifdef _MSC_VER
-	#if _MSC_VER < 1910
-		#include <boost\filesystem.hpp>
-		namespace fileSys = boost::filesystem;
-	#elif _MSC_VER < 1920
-		#include <filesystem>
-		namespace fileSys = std::experimental::filesystem;
-	#else
-		#include <filesystem>
-		namespace fileSys = std::filesystem;
-	#endif
-#else
-	#include <filesystem>
-	namespace fileSys = std::filesystem;
-#endif
-
 
 //TODO Allow geographic grids with parameters in metres
 //TODO Rename grids to match equations
@@ -250,15 +234,15 @@ int RunREMP(const std::string & srcParamFN)
 
 	//Output folders and parameter filenames
 	if (preFN.length() > 0 && preFN.back() != '_') preFN += '_';
-	std::string srDir = workDir + "\\Source";
-	std::string mcDir = workDir + "\\MCalcs";
-	std::string hrDir = workDir + "\\Homerange";
-	std::string drDir = workDir + "\\Dispersal";
-	std::string ocDir = workDir + "\\Occupancy";
-	std::string mcParamFN = workDir + "\\" + preFN + "mcalcs.par";
-	std::string hrParamFN = workDir + "\\" + preFN + "homerange.par";
-	std::string drParamFN = workDir + "\\" + preFN + "dispersal.par";
-	std::string tmpFN = workDir + "\\tempData";
+	std::string srDir = workDir + pathSep + "Source";
+	std::string mcDir = workDir + pathSep + "MCalcs";
+	std::string hrDir = workDir + pathSep + "Homerange";
+	std::string drDir = workDir + pathSep + "Dispersal";
+	std::string ocDir = workDir + pathSep + "Occupancy";
+	std::string mcParamFN = workDir + pathSep + preFN + "mcalcs.par";
+	std::string hrParamFN = workDir + pathSep + preFN + "homerange.par";
+	std::string drParamFN = workDir + pathSep + preFN + "dispersal.par";
+	std::string tmpFN = workDir + pathSep + "tempData";
 
 	//Create output folders if they don't already exist
 	std::cout << "Creating work directory and folder structure\n";
@@ -286,7 +270,7 @@ int RunREMP(const std::string & srcParamFN)
 		if (!inTif.is_open()) return msgErrorStr(-3, srHabFN0);
 		if (inTif.dataType() != 6) return msgErrorStr(-99, "Input tif habitat grid data type is not float32");
 
-		outFlt.open(GridFN(srDir + "\\" + preFN + "SR_Habitat_t0"));
+		outFlt.open(GridFN(srDir + pathSep + preFN + "SR_Habitat_t0"));
 		outFlt.copyHeader(inTif);
 		if (!outFlt.is_open()) return msgErrorStr(-3, srHabFN0);
 
@@ -298,7 +282,7 @@ int RunREMP(const std::string & srcParamFN)
 		}
 		inTif.close();
 		outFlt.close();
-		srHabFN0 = (srDir + "\\" + preFN + "SR_Habitat_t0");
+		srHabFN0 = (srDir + pathSep + preFN + "SR_Habitat_t0");
 	}
 	//End of hack
 
@@ -405,17 +389,17 @@ int RunREMP(const std::string & srcParamFN)
 	for (int t = 0; t < timeSteps; t++) {
 		std::string tStr = toStr(t);
 		std::string srHabFNt(""),
-			srHHaFNt(srDir + "\\" + preFN + "SR_Habitat_Area_t" + tStr),
-			srPrmFNt(srDir + "\\" + preFN + "SR_Permeability_t" + tStr),
-			hrHabFNt(hrDir + "\\" + preFN + "HR_Habitat_Area_t" + tStr),
-			hrPrmFNt(hrDir + "\\" + preFN + "HR_Permeability_t" + tStr),
-			hrNhaFNt(hrDir + "\\" + preFN + "HR_NHA_t" + tStr),
-			hrMpcFNt(hrDir + "\\" + preFN + "HR_MPC_t" + tStr),
-			drHabFNt(drDir + "\\" + preFN + "DR_Habitat_Area_t" + tStr),
-			drPrmFNt(drDir + "\\" + preFN + "DR_Permeability_t" + tStr),
-			drNhaFNt(drDir + "\\" + preFN + "DR_NHA_t" + tStr),
-			drOccFNt(drDir + "\\" + preFN + "DR_Occupancy_t" + tStr),
-			drMpcFNt(drDir + "\\" + preFN + "DR_MPC_t" + tStr);
+			srHHaFNt(srDir + pathSep + preFN + "SR_Habitat_Area_t" + tStr),
+			srPrmFNt(srDir + pathSep + preFN + "SR_Permeability_t" + tStr),
+			hrHabFNt(hrDir + pathSep + preFN + "HR_Habitat_Area_t" + tStr),
+			hrPrmFNt(hrDir + pathSep + preFN + "HR_Permeability_t" + tStr),
+			hrNhaFNt(hrDir + pathSep + preFN + "HR_NHA_t" + tStr),
+			hrMpcFNt(hrDir + pathSep + preFN + "HR_MPC_t" + tStr),
+			drHabFNt(drDir + pathSep + preFN + "DR_Habitat_Area_t" + tStr),
+			drPrmFNt(drDir + pathSep + preFN + "DR_Permeability_t" + tStr),
+			drNhaFNt(drDir + pathSep + preFN + "DR_NHA_t" + tStr),
+			drOccFNt(drDir + pathSep + preFN + "DR_Occupancy_t" + tStr),
+			drMpcFNt(drDir + pathSep + preFN + "DR_MPC_t" + tStr);
 
 		if (!GetParam(srcParamFN, "INPUTS", "HAB_FN" + tStr, srHabFNt)) return msgErrorStr(-1, "HAB_FN" + tStr, srcParamFN);
 		
@@ -432,9 +416,9 @@ int RunREMP(const std::string & srcParamFN)
 				if (!inTif.is_open()) return msgErrorStr(-3, srHabFNt);
 				if (inTif.dataType() != 6) return msgErrorStr(-99, "Input tif habitat grid data type is not float32");
 
-				outFlt.open(GridFN(srDir + "\\" + preFN + "SR_Habitat_t" + tStr));
+				outFlt.open(GridFN(srDir + pathSep + preFN + "SR_Habitat_t" + tStr));
 				outFlt.copyHeader(inTif);
-				if (!outFlt.is_open()) return msgErrorStr(-4, srDir + "\\" + preFN + "SR_Habitat_t" + tStr);
+				if (!outFlt.is_open()) return msgErrorStr(-4, srDir + pathSep + preFN + "SR_Habitat_t" + tStr);
 
 				std::unique_ptr<float[]> data = std::make_unique<float[]>(inTif.nCols());
 
@@ -446,7 +430,7 @@ int RunREMP(const std::string & srcParamFN)
 				inTif.close();
 				outFlt.close();
 			}
-			srHabFNt = (srDir + "\\" + preFN + "SR_Habitat_t" + tStr);
+			srHabFNt = (srDir + pathSep + preFN + "SR_Habitat_t" + tStr);
 		}
 		if (!FileExists(GridFN(srHabFNt))) return msgErrorStr(-3, srHabFNt);
 		//End of hack
@@ -569,9 +553,9 @@ int RunREMP(const std::string & srcParamFN)
 		//Check required inputs exist
 		for (int t = 0; t < timeSteps; t++) {
 			std::string tStr = toStr(t),
-				drHabFNt(drDir + "\\" + preFN + "DR_Habitat_Area_t" + tStr),
-				drPrmFNt(drDir + "\\" + preFN + "DR_Permeability_t" + tStr),
-				drNhaFNt(drDir + "\\" + preFN + "DR_NHA_t" + tStr);
+				drHabFNt(drDir + pathSep + preFN + "DR_Habitat_Area_t" + tStr),
+				drPrmFNt(drDir + pathSep + preFN + "DR_Permeability_t" + tStr),
+				drNhaFNt(drDir + pathSep + preFN + "DR_NHA_t" + tStr);
 			if (!FileExists(GridFN(drHabFNt)) || !FileExists(GridFN(drPrmFNt)) || !FileExists(GridFN(drNhaFNt)))
 				return msgErrorStr(-99, "Files required to process dispersal not found:\n", drHabFNt + "\n" + drPrmFNt + "\n" + drNhaFNt);
 		}
@@ -594,9 +578,9 @@ int RunREMP(const std::string & srcParamFN)
 		if (doTriLambda) {
 			for (int t = 0; t < timeSteps; t++) {
 				std::string tStr = toStr(t);
-				std::string SiFNt(drDir + "\\" + preFN + "DR_Occupancy_t" + tStr + "_Si");
-				std::string nhaFNt(drDir + "\\" + preFN + "DR_NHA_t" + tStr);
-				std::string drOccFNt(drDir + "\\" + preFN + "DR_Occupancy_t" + tStr);
+				std::string SiFNt(drDir + pathSep + preFN + "DR_Occupancy_t" + tStr + "_Si");
+				std::string nhaFNt(drDir + pathSep + preFN + "DR_NHA_t" + tStr);
+				std::string drOccFNt(drDir + pathSep + preFN + "DR_Occupancy_t" + tStr);
 
 				if (!FileExists(GridFN(SiFNt)) || !FileExists(GridFN(nhaFNt)))
 					return msgErrorStr(-99, "Files required to create Pu grid not found:\n", SiFNt + "\n" + nhaFNt);
@@ -614,27 +598,27 @@ int RunREMP(const std::string & srcParamFN)
 			std::string tStr = toStr(t);
 			habDen = srHabMax;
 			if (doFinalStepAtHR && hrCellSize != srCellSize) {
-				habFNt = hrDir + "\\" + preFN + "HR_Habitat_Area_t" + tStr;
+				habFNt = hrDir + pathSep + preFN + "HR_Habitat_Area_t" + tStr;
 				habDen = float(hrCellArea);
 			}
 			else if (applyAreaToHab) {
-				habFNt = srDir + "\\" + preFN + "SR_Habitat_Area_t" + tStr;
+				habFNt = srDir + pathSep + preFN + "SR_Habitat_Area_t" + tStr;
 				habDen = float(srCellArea);
 			}
 			else if (!GetParam(srcParamFN, "INPUTS", "HAB_FN" + tStr, habFNt)) 
 				return msgErrorStr(-1, "HAB_FN" + tStr, srcParamFN);
 
 			if (GetFileExt(habFNt).compare("tif") == 0) {
-				habFNt = (srDir + "\\" + preFN + "SR_Habitat_t" + tStr);
+				habFNt = (srDir + pathSep + preFN + "SR_Habitat_t" + tStr);
 			}
 			
-			std::string drOccFNt(drDir + "\\" + preFN + "DR_Occupancy_t" + tStr);
+			std::string drOccFNt(drDir + pathSep + preFN + "DR_Occupancy_t" + tStr);
 			
 			//Following changes to write final grids as tifs until full gstream implementation 
-			//std::string PuFNt(ocDir + "\\" + preFN + "Pu_t" + tStr);
-			//std::string PiFNt(ocDir + "\\" + preFN + "Pi_t" + tStr);
-			std::string PuFNt(ocDir + "\\" + preFN + "Pu_t" + tStr + ".tif");
-			std::string PiFNt(ocDir + "\\" + preFN + "Pi_t" + tStr + ".tif");
+			//std::string PuFNt(ocDir + pathSep + preFN + "Pu_t" + tStr);
+			//std::string PiFNt(ocDir + pathSep + preFN + "Pi_t" + tStr);
+			std::string PuFNt(ocDir + pathSep + preFN + "Pu_t" + tStr + ".tif");
+			std::string PiFNt(ocDir + pathSep + preFN + "Pi_t" + tStr + ".tif");
 
 			if (!FileExists(GridFN(habFNt)) || !FileExists(GridFN(drOccFNt)))
 				return msgErrorStr(-99, "Files required to create Pi grid not found:\n", habFNt + "\n" + drOccFNt);

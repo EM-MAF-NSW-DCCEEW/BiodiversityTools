@@ -25,6 +25,24 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include <fstream>
 #include <vector>
 
+#ifdef _MSC_VER
+#if _MSC_VER < 1910
+#include <boost\filesystem.hpp>
+namespace fileSys = boost::filesystem;
+#elif _MSC_VER < 1920
+#include <filesystem>
+namespace fileSys = std::experimental::filesystem;
+#else
+#include <filesystem>
+namespace fileSys = std::filesystem;
+#endif
+#else
+#include <filesystem>
+namespace fileSys = std::filesystem;
+#endif
+
+const std::string pathSep{ fileSys::path::preferred_separator };
+
 //////////////////////////////////////////
 //Legacy file utils using char arrays
 //////////////////////////////////////////

@@ -548,7 +548,7 @@ int GetPetalFiles(const std::string & paramFN, const std::string & paramSection,
 		if (!GetParam(paramFN, paramSection, "DSTSIZE", winDstSize)) return msgErrorStr(-1, "DSTSIZE", paramFN);
 		if (!GetParam(paramFN, paramSection, "ZONERATIO", winZoneRatio)) return msgErrorStr(-1, "ZONERATIO", paramFN);
 		if (!GetParam(paramFN, paramSection, "SAVETMPFILES", saveTmpFiles)) saveTmpFiles = true;
-		std::string petalsFN = workDir + "\\petals_" + toStr(winSrcSize) + "_" + toStr(winDstSize) + "_" + toStr(int(round(winZoneRatio * 10)));
+		std::string petalsFN = workDir + pathSep + "petals_" + toStr(winSrcSize) + "_" + toStr(winDstSize) + "_" + toStr(int(round(winZoneRatio * 10)));
 
 		//Run CreatePetals to create lookup and translate
 		int result = CreatePetals(petalsFN, winSrcSize, winDstSize, winZoneRatio, saveTmpFiles, params);
