@@ -138,6 +138,7 @@ int LinksRandomSampling_ST(LinksParams &p) {
 	std::vector<std::vector<float>> habData(p.nRows, std::vector<float>(p.nCols, p.noData));
 	std::vector<std::vector<float>> lnkData(p.nRows, std::vector<float>(p.nCols, 0.0f));
 	
+	msgText("Reading input data to memory");
 	for (uint r = 0; r < p.nRows; r++) {
 		p.cstGS.read((char *)(cstData[r].data()), sizeof(float) * p.nCols);
 	}
@@ -148,9 +149,9 @@ int LinksRandomSampling_ST(LinksParams &p) {
 		}
 	}
 
-
+	msgText("Processing least cost paths");
 	for (int i = 0; i < p.pointPairs.size(); i++) {
-		msgProgress("Processing path: ", i);
+		msgProgress("Percent complete: ", i * 100 / p.pointPairs.size());
 		//msgString("Path:\t" + toStr(i) + "\tSrc:\t " + toStr(srcCell->x) + ", " + toStr(srcCell->y) + "\tDst:\t " + toStr(dstCell->x) + ", " + toStr(dstCell->y) + "\n");
 
 		//Reset nodes, heapSize and cell pointers
@@ -262,7 +263,7 @@ int LinksRandomSampling_ST(LinksParams &p) {
 	}//End for loop
 
 	 //Save output and cleanup
-	msgString("\rFinished Processing\n");
+	msgString("\rPercent complete: 100\n");
 	msgString("Paths completed: " + toStr(pathsCompleted) + "\n");
 	msgString("Paths failed: " + toStr(pathsFailed) + "\n");
 
@@ -273,7 +274,7 @@ int LinksRandomSampling_ST(LinksParams &p) {
 	}
 	p.lnkGS.close();
 
-	msgString("Complete!");
+	msgString("Complete!\n");
 	return 0;
 }
 
