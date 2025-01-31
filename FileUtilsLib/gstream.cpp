@@ -1,7 +1,8 @@
 /*
 gstream.cpp - wraps GDAL Dataset in filestream like interface
 Copyright(C) 2024 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW)
-Author: Jamie Love, Ecological Modelling, Science and Insights Division
+NSW DCCEEW Metrics and Forecasting Ecological Modelling Team 
+ecological.modelling@environment.nsw.gov.au
 
 This program is free software : you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
