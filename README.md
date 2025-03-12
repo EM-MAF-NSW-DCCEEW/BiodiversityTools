@@ -103,7 +103,7 @@ Simple example parameter files and data are provided in the Examples folder. The
 
 The software package will be made available via SEED, the NSW Government’s central resource for Sharing and Enabling Environmental Data:
 
-https://datasets.seed.nsw.gov.au/dataset/nsw-biodiversity-modelling-tools (TBA)
+https://datasets.seed.nsw.gov.au/dataset/nsw-biodiversity-modelling-tools
 
 
 ## Contact
