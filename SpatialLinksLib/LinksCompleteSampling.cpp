@@ -179,15 +179,13 @@ int LinksCompleteSampling_ST(LinksParams &p) {
 					cxtData[windowCenter][focalCol] += float(exp(-(1.0 / p.d_a) * cCell->cost) * double(habData[cCell->y][cCell->x + xOffset]));
 
 				//Output Links
-				//TODO test dest cell against habMin removed for testing
-				//if (p.doLinks && habData[cCell->y][cCell->x + xOffset] >= p.habMin) {
-				if (p.doLinks){ // && habData[cCell->y][cCell->x + xOffset] >= p.habMin) {
-						//Apply decay function
+				if (p.doLinks && habData[cCell->y][cCell->x + xOffset] >= p.habMin) {
+					//Apply decay function
 					d_e = exp(-p.d_i * (double(cCell->cost) - p.d_a));
 					srcDstHab = double(habData[windowCenter][focalCol]) * double(habData[cCell->y][cCell->x + xOffset]);
 					pathValue = float(d_e / (1.0 + d_e) * srcDstHab);
 					pCell = cCell;
-
+					//Add pathValue to all pixels in the path
 					while (pCell != nullptr) {
 						lnkData[pCell->y][pCell->x + xOffset] += pathValue;
 						pCell = pCell->previous;

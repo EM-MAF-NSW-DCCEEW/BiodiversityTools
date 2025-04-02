@@ -855,7 +855,7 @@ int CUDAOccupancyCBA_TS_L(CBAParams &p)
 			//Calculate MPC grid as MPC/maxMPC or MPC/mpcIn if last iteration
 			if (p.haveMPCOut) {
 				p.mpcTmpFS.close();
-				p.mpcTmpFS.open(mpcTmpFN, std::ios::in | std::ios::binary);
+				p.mpcTmpFS.open(GridFN(mpcTmpFN), std::ios::in | std::ios::binary);
 				float mpcNum, mpcVal;
 				p.mpcInFS.seekg(0);
 				for (j = 0; j < p.nCells; j++) {
