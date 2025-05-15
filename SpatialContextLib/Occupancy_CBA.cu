@@ -18,6 +18,45 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see <https://www.gnu.org/licenses/>.
 */
 
+
+/*
+* Resolving differences between _S and _L versions
+
+CUDAOccupancyCBA_TS_S()
+
+for (uint t = 0; t < p.rempTimeSteps; t++)
+	h_inData[i].w = p.mpcInitFactor
+	if (p.haveMPCIn && t == 0)
+		p.mpcInFS.read((char*)&(h_inData[i].w), sizeof(float));
+
+	for (uint remp_i = 0; remp_i < p.rempIterations; remp_i++) {
+
+		OccupancyCBA_kernel()
+
+		p.mpcDen = max(h_outData[j].y, p.mpcDen);
+
+		if (remp_i + 1 < p.rempIterations)
+			//Should this happen for all iterations since last iteration does h_outData[j].y / h_inData[j].w
+			h_inData[j].w = h_outData[j].y > fltEps ? h_outData[j].y / p.mpcDen : h_outData[j].y;
+
+		if (remp_i + 1 < p.rempIterations && p.rempWriteEachIteration) {
+			p.mpcOutFS.open(GridFN(p.mpcOutFNs[t] + "_r_i" + toStr(remp_i)), std::ios::out | std::ios::binary);
+			p.mpcOutFS.write((const char*)&(h_outData[j].y), sizeof(float));
+
+	if (p.haveMPCOut) {
+		p.mpcOutFS.open(GridFN(p.mpcOutFNs[t]), std::ios::out | std::ios::binary);
+		h_outData[j].y = h_inData[j].w > fltEps ? h_outData[j].y / h_inData[j].w : h_outData[j].y;
+		p.mpcOutFS.write((const char*)&(h_outData[j].y), sizeof(float));
+
+CUDAOccupancyCBA_TS_S()
+
+
+* 
+*/
+
+
+
+
 #ifndef _REMP_CBA_KERNEL_CU_
 #define _REMP_CBA_KERNEL_CU_
 #include <cuda_runtime.h>

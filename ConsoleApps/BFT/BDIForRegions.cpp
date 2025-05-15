@@ -276,7 +276,9 @@ int CalcBDIForRegions(const std::string & paramFN)
 				for (i = 0; i < nCells; i++) {
 					if (clsData[i] > 0.0f && clsData[i] != noData && condData[i] != noData && ehaData[i] != noData) {
 						
-						//Moved regData checks up to ensure EHA/OHA[0] sums only include pixels in regions 
+						//Moved regData checks up to ensure EHA/OHA[0] sums only include pixels in regions
+						// TODO this breaks benefit grids where no original extent is within regions
+						//Can't use regions with incomplete coverage with and derive full MBV coverage
 						if (useRegions && (regData[i] == noData || int(std::lround(regData[i])) < 1)) continue;
 					
 						cellProb = double(clsData[i]);

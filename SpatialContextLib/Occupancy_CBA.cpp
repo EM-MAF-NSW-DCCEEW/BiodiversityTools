@@ -142,7 +142,13 @@ int OccupancyCBA_TS(const std::string & paramFN, CBAParams & p) {
 	
 	//Call CUDA_REMP_TS_CBA
 	try {
-		result = BufferRequired(6ULL, p.nCells) ? CUDAOccupancyCBA_TS_L(p) : CUDAOccupancyCBA_TS_S(p);
+		//result = BufferRequired(6ULL, p.nCells) ? CUDAOccupancyCBA_TS_L(p) : CUDAOccupancyCBA_TS_S(p);
+
+		//result = CUDAOccupancyCBA_TS_L(p);
+
+		result = CUDAOccupancyCBA_TS_S(p);
+
+
 	}
 	catch (std::exception e) {
 		return msgErrorStr(-11, e.what());
