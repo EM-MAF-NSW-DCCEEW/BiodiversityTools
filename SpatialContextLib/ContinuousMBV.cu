@@ -53,7 +53,7 @@ __global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *t
 		ld.global.f32 	txSrcVal, [txAddress];
 		*/
 		float Hi = txSrcData[cell];
-		if (Hi != -9999.0f) {
+		if (Hi != d_noData) {
 			float txSrcPixel1 = txSrcData[1ULL * nColsAligned + cell];
 			float txSrcPixel2 = txSrcData[2ULL * nColsAligned + cell];
 			float txSrcPixel3 = txSrcData[3ULL * nColsAligned + cell];
@@ -142,8 +142,8 @@ __global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *t
 			outData[cell].y = sumHjSij;
 		}
 		else {
-			outData[cell].x = -9999.0f;
-			outData[cell].y = -9999.0f;
+			outData[cell].x = d_noData;
+			outData[cell].y = d_noData;
 		}
 	}
 }
@@ -175,26 +175,31 @@ int CUDAContinuousMBV(CBAParams &p)
 	//Sample all txDst grids
 	std::cout << "Sampling " << p.nTxGrids << " grids\n";
 
-	float txVal = p.noData, habVal = p.noData;
+	float txVal = p.noData;
+	float habVal = p.noData;
+	float habNoData = p.noData;
+	float txNoData = p.noData;
 	uint nSampled = 0, prevSampled = 0;
+
 	p.habInFS.read((char*)(habData.get()), p.nCells * sizeof(float));
 
 	for (uint tx = 0; tx < p.nTxGrids; tx++) {
 		msgProgress("Percent complete: ", tx * 100 / p.nTxGrids);
 		p.txDstGSs[tx].read((char*)(txData.get()), p.nCells * sizeof(float));
+		txNoData = float(p.txDstGSs[tx].noData());
 		nSampled = 0;
 		for (uint y = p.sampleStep; y < p.nRows - p.sampleStep; y += p.sampleStep) {
 			for (uint x = p.sampleStep; x < p.nCols - p.sampleStep; x += p.sampleStep) {
 				txVal = txData[y * p.nCols + x];
 				
-				if (txVal == p.noData) continue;
+				if (txVal == txNoData) continue;
 				h_txDstSamples[nSampled * p.maxTxGrids + tx + 1] = txVal;// + 1 for habitat
 				sampleGrid[y * p.nCols + x] = 1.0f;
 				nSampled++;
 
 				if (tx == 0) {
 					habVal = habData[y * p.nCols + x];
-					if (habVal == p.noData) continue;
+					if (habVal == habNoData) continue;
 					h_txDstSamples[nSampled * p.maxTxGrids + tx] = habVal;
 				}
 
@@ -228,7 +233,7 @@ int CUDAContinuousMBV(CBAParams &p)
 	CUDA(cudaMalloc(&d_outData, nColsAligned * sizeof(float2)));
 	CUDA(cudaMemcpyToSymbol(d_nCols, &(p.nCols), sizeof(uint)));
 	CUDA(cudaMemcpyToSymbol(d_nColsAligned, &(nColsAligned), sizeof(uint)));
-	CUDA(cudaMemcpyToSymbol(d_noData, &(p.noData), sizeof(uint)));
+	CUDA(cudaMemcpyToSymbol(d_noData, &(habNoData), sizeof(uint)));
 	CUDA(cudaMemcpy(d_txDstSamples, h_txDstSamples.get(), nSampled * p.maxTxGrids * sizeof(float), cudaMemcpyHostToDevice));
 
 	std::cout << "Processing " << p.nCells << " grid cells on the GPU\n";
