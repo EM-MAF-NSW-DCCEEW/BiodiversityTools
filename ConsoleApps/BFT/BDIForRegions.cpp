@@ -278,7 +278,7 @@ int CalcBDIForRegions(const std::string & paramFN)
 						
 						//Moved regData checks up to ensure EHA/OHA[0] sums only include pixels in regions
 						// TODO this breaks benefit grids where no original extent is within regions
-						//Can't use regions with incomplete coverage with and derive full MBV coverage
+						//Can't use regions with incomplete coverage and derive full MBV coverage
 						if (useRegions && (regData[i] == noData || int(std::lround(regData[i])) < 1)) continue;
 					
 						cellProb = double(clsData[i]);
@@ -426,6 +426,11 @@ int CalcBDIForRegions(const std::string & paramFN)
 			//Calculate BDI for region r including not region (Nr), pristine region (Pr) and pristine not region (Pn)
 			for (i = 0; i < nClasses; i++) {
 				if (clsOHAir[0][i] <= 0.0) continue;
+
+				//Zero for each i
+				clsBDINum = 0.0;
+				clsBDIDen = 0.0;
+
 				for (k = 0; k < 11; k++) {
 					sumEHAjir = 0.0;
 					sumEHAjor = 0.0;
@@ -462,7 +467,7 @@ int CalcBDIForRegions(const std::string & paramFN)
 				prBDI[r] = prBDINum / BDIDen;
 				pnBDI[r] = pnBDINum / BDIDen;
 			}
-		}
+		}//for r
 
 		//Calculte MBV for each class cls in region 0 using similarities
 		for (n = 0; n < nClasses; n++) {

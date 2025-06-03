@@ -102,6 +102,8 @@ struct CBAParams {
 	uint nTxGrids = 0;
 	uint colStep = 32;
 	std::vector<std::ifstream> txSrcFSs, txDstFSs;
+	//Updated to use gstreams and read tif transform grids - Already declared below
+	//std::vector<igstream> txSrcGSs, txDstGSs;
 
 	//RESILIENCE MULTI_DISPERSAL
 	uint nDispersals;

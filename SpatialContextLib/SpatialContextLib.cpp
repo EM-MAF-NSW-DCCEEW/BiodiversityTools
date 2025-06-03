@@ -35,7 +35,7 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 //#include "GDMSimToClass.h"
 //#include "GDMSimToPixel.h"
 //#include "GDMSimToSpcObs.h"
-//#include "ContinuousMBV.h"
+#include "ContinuousMBV.h"
 //#include "ContinuousBDI.h"
 //#include "IterateSumNHab.h"
 
@@ -171,18 +171,18 @@ CUDA_CBA_API int OccupancyCBA_TS(const char *paramFN, msgTextFP msgTextCB, msgPr
 //	return GDMSimToSpcObs(paramFN, params);
 //}
 //
-////Continuous MBV exported functions
-//CUDA_CBA_API int ContinuousMBV(const char *paramFN) {
-//	CBAParams params;
-//	return ContinuousMBV(paramFN, params);
-//}
-//
-//CUDA_CBA_API int ContinuousMBV(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB) {
-//	CBAParams params;
-//	msgText = msgTextCB;
-//	msgProgress = msgUpdateCB;
-//	return ContinuousMBV(paramFN, params);
-//}
+//Continuous MBV exported functions
+CUDA_CBA_API int ContinuousMBV(const char *paramFN) {
+	CBAParams params;
+	return ContinuousMBV(paramFN, params);
+}
+
+CUDA_CBA_API int ContinuousMBV(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB) {
+	CBAParams params;
+	msgText = msgTextCB;
+	msgProgress = msgUpdateCB;
+	return ContinuousMBV(paramFN, params);
+}
 //
 ////Continuous BDI exported functions
 //CUDA_CBA_API int ContinuousBDI(const char *paramFN) {

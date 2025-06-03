@@ -46,10 +46,14 @@ __global__ void BenefitCBA_kernel(int inOffset, int outOffset, float *d_mbvData,
 		focal.y == d_noData || focal.y < 0.0 ||
 		focal.z == d_noData || focal.z < 0.0 ||
 		focal.w == d_noData || focal.w < 0.0 ||
-		d_mbvData[(outOffset + blockIdx.y) * gridDim.x + blockIdx.x] == d_noData ||
-		d_mbvData[(outOffset + blockIdx.y) * gridDim.x + blockIdx.x] < 0.0
+		d_mbvData[(outOffset + blockIdx.y) * gridDim.x + blockIdx.x] == d_noData
 		)
 		d_outData[(outOffset + blockIdx.y) * gridDim.x + blockIdx.x] = d_noData;
+	//MBV can be less than zero under future scenarios if class EHA increases over its OHA 
+	//In this case, we set benefits to 0
+	//TODO Is ths the best option....
+	else if (d_mbvData[(outOffset + blockIdx.y) * gridDim.x + blockIdx.x] <= 0.0f)
+		d_outData[(outOffset + blockIdx.y) * gridDim.x + blockIdx.x] = 0.0f;
 	else {
 		//Declare thread local storage
 		int i, petal, activeCells = 0;

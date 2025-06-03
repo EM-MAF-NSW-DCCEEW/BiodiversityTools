@@ -85,8 +85,8 @@ CUDA_CBA_API int OccupancyCBA_TS(const char * paramFN, msgTextFP msgTextCB, msgP
 //CUDA_CBA_API int GDMSimToSpcObs(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
 //
 ////Continuous MBV
-//CUDA_CBA_API int ContinuousMBV(const char *paramFN);
-//CUDA_CBA_API int ContinuousMBV(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
+CUDA_CBA_API int ContinuousMBV(const char *paramFN);
+CUDA_CBA_API int ContinuousMBV(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
 //
 ////Continuous BDI
 //CUDA_CBA_API int ContinuousBDI(const char *paramFN);
