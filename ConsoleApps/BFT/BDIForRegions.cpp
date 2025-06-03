@@ -288,7 +288,7 @@ int CalcBDIForRegions(const std::string & paramFN)
 						clsOHAir[0][cls] += cellProb;
 
 						//Calculate class EHA and OHA values for region at cell i
-					if (useRegions) { // && regData[i] != noData && int(std::lround(regData[i])) > 0) {//No data and > 0 now checked above
+						if (useRegions) { // && regData[i] != noData && int(std::lround(regData[i])) > 0) {//No data and > 0 now checked above
 							reg = uint(std::lround(regData[i]));
 							clsEHAir[reg][cls] += cellEHA;
 							clsOHAir[reg][cls] += cellProb;
@@ -313,6 +313,23 @@ int CalcBDIForRegions(const std::string & paramFN)
 		if (!write2dVectorToFile(BDIDataFN + "_ohaor.bin", clsOHAor)) return msgErrorStr(-4, BDIDataFN + "_ohaor.bin");
 	}
 
+	//Sum region condition and EHA values for all regions
+	std::vector<double> regionCond(nRegions, 0.0); //Condition for each region;
+	std::vector<double> regionEHA(nRegions, 0.0); //EHA for each region
+	
+	for (i = 0; i < nCells; i++) {
+		if (condData[i] != noData && ehaData[i] != noData) {
+			regionCond[0] += double(condData[i]);
+			regionEHA[0] += double(ehaData[i]);
+			if (useRegions && regData[i] != noData && int(std::lround(regData[i])) > 0) {
+				reg = uint(std::lround(regData[i]));
+				regionCond[reg] += double(condData[i]);
+				regionEHA[reg] += double(ehaData[i]);
+			}
+		}
+	}
+
+	//Read alternate OHA data if using
 	if (useAltOHAData) {
 		msgString("Reading alternate OHA data from " + altOHADataFN + "_*.bin\n");
 		if (!read2dVectorFromFile<double>(altOHADataFN + "_ohair.bin", clsOHAir)) return msgErrorStr(-3, altOHADataFN + "_ohair.bin");
@@ -330,7 +347,12 @@ int CalcBDIForRegions(const std::string & paramFN)
 	//Apply areaFactor to convert values to hectares and calculate increased EHA for class MBV
 	areaFactor = pow(cellSize, 2) * (cellSize > 1.0f ? 0.0001L : 1000000.0L);
 	std::vector<double> clsMBVEHA(nClasses, 0.0);
+
+	//Divide region conditon and EHA sums by count to get averages before scaling count by area factor
+	for (r = 0; r < nRegions; r++) regionCond[r] /= regionHa[r];
+	for (r = 0; r < nRegions; r++) regionEHA[r] /= regionHa[r];
 	for (r = 0; r < nRegions; r++) regionHa[r] *= areaFactor;
+
 	for (n = 0; n < nClasses; n++) {
 		classCond[n] *= areaFactor;
 		for (r = 0; r < nRegions; r++) {
@@ -512,10 +534,10 @@ int CalcBDIForRegions(const std::string & paramFN)
 		msgText("Creating BDI table");
 		bdiTabFS.open(bdiTabFN, std::ios::out);
 		if (!bdiTabFS.is_open()) return msgErrorStr(-4, bdiTabFN);
-		bdiTabFS << "Region, Area (ha),Total diversity (Pre),Total diversity (Cur),Unique diversity (Pre),Unique diversity (Cur)\n";
+		bdiTabFS << "Region, Area (ha), Condition (Avg), EHA (Avg), Total diversity (Pre),Total diversity (Cur),Unique diversity (Pre),Unique diversity (Cur)\n";
 		for (r = 0; r < nRegions; r++) {
 			SetParam(paramFN, "BDI", "BDI" + toStr(r), irBDI[r]);
-			bdiTabFS << r << "," << regionHa[r] << "," << totalPristBDI[r] << "," << totalBDI[r] << "," << uniquePristBDI[r] << "," << uniqueBDI[r] << "\n";
+			bdiTabFS << r << "," << regionHa[r] << "," << regionCond[r] << "," << regionEHA[r] << "," << totalPristBDI[r] << "," << totalBDI[r] << "," << uniquePristBDI[r] << "," << uniqueBDI[r] << "\n";
 		}
 		bdiTabFS.close();
 	}
