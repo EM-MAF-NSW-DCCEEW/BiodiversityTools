@@ -99,10 +99,12 @@ int CalcBDIForRegions(const std::string & paramFN)
 		return msgErrorStr(-1, "BDITABLE or MBVTABLE or MBV_FN", paramFN);
 
 	//Check condition and EHA grids exist and headers match
-	if (!FileExists(GridFN(condFN))) return msgErrorStr(-5, GridFN(condFN));
-	if (!FileExists(GridFN(ehaFN))) return msgErrorStr(-5, GridFN(ehaFN));
-	if (!ReadGridHeader(condFN, nCols, nRows, cellSize, noData) || !CompareGridHeaders(condFN, ehaFN)) 
-		return msgErrorStr(-7, condFN, ehaFN);
+	if (!FileExists(GridFN(condFN)) || !FileExists(HeaderFN(condFN))) return msgErrorStr(-3, GridFN(condFN));
+	if (!FileExists(GridFN(ehaFN)) || !FileExists(HeaderFN(ehaFN))) return msgErrorStr(-3, GridFN(ehaFN));
+	if (!ReadGridHeader(condFN, nCols, nRows, cellSize, noData)) return msgErrorStr(-5, condFN);
+	if (!CompareGridHeaders(condFN, ehaFN)) return msgErrorStr(-7, condFN, ehaFN);
+	nCells = nCols * nRows;
+
 
 	//Check class grid or probability list file exists
 	if (clsFN.find(".par") == std::string::npos && FileExists(GridFN(clsFN))) useClassGrid = true;
@@ -112,7 +114,7 @@ int CalcBDIForRegions(const std::string & paramFN)
 
 
 	//Read regions grid if supplied and count regions and their area including whole region
-	nCells = nCols * nRows;
+	//TODO combine with region code below
 	std::unique_ptr<float[]> regData;
 	std::vector<double> regionHa(1, 0.0);
 	if (useRegions) {
@@ -190,7 +192,8 @@ int CalcBDIForRegions(const std::string & paramFN)
 	ehaFS.read((char*)ehaData.get(), nCells * sizeof(float));
 	ehaFS.close();
 
-	//Count whole region area if not using region grid
+	//Count whole domain area if not using region grid
+	//TODO Combine region code here
 	if (!useRegions) for (i = 0; i < nCells; i++) regionHa[0] += condData[i] == noData ? 0.0 : 1.0;
 
 	//Scale condition to between 0 and 1
@@ -314,14 +317,17 @@ int CalcBDIForRegions(const std::string & paramFN)
 	}
 
 	//Sum region condition and EHA values for all regions
+	//TODO Combine this with region code above
 	std::vector<double> regionCond(nRegions, 0.0); //Condition for each region;
 	std::vector<double> regionEHA(nRegions, 0.0); //EHA for each region
 	
 	for (i = 0; i < nCells; i++) {
 		if (condData[i] != noData && ehaData[i] != noData) {
-			regionCond[0] += double(condData[i]);
-			regionEHA[0] += double(ehaData[i]);
+			//Moved regData checks up to ensure regionCond[0] and regionEHA[0] sums only include pixels in regions
 			if (useRegions && regData[i] != noData && int(std::lround(regData[i])) > 0) {
+				regionCond[0] += double(condData[i]);
+				regionEHA[0] += double(ehaData[i]);
+	
 				reg = uint(std::lround(regData[i]));
 				regionCond[reg] += double(condData[i]);
 				regionEHA[reg] += double(ehaData[i]);
@@ -534,7 +540,7 @@ int CalcBDIForRegions(const std::string & paramFN)
 		msgText("Creating BDI table");
 		bdiTabFS.open(bdiTabFN, std::ios::out);
 		if (!bdiTabFS.is_open()) return msgErrorStr(-4, bdiTabFN);
-		bdiTabFS << "Region, Area (ha), Condition (Avg), EHA (Avg), Total diversity (Pre),Total diversity (Cur),Unique diversity (Pre),Unique diversity (Cur)\n";
+		bdiTabFS << "Region,Area (ha),Condition (Avg),EHA (Avg),Total diversity (Pre),Total diversity (Cur),Unique diversity (Pre),Unique diversity (Cur)\n";
 		for (r = 0; r < nRegions; r++) {
 			SetParam(paramFN, "BDI", "BDI" + toStr(r), irBDI[r]);
 			bdiTabFS << r << "," << regionHa[r] << "," << regionCond[r] << "," << regionEHA[r] << "," << totalPristBDI[r] << "," << totalBDI[r] << "," << uniquePristBDI[r] << "," << uniqueBDI[r] << "\n";
