@@ -30,4 +30,8 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 int LinksCompleteSampling(std::string paramFN, LinksParams &p);
 int LinksCompleteSampling_ST(LinksParams& p);
 
+int LinksCompleteSamplingLDE(std::string paramFN, LinksParams& p);
+int LinksCompleteSamplingLDE_ST(LinksParams& p);
+
+
 #endif

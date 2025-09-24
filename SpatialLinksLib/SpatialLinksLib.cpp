@@ -68,3 +68,17 @@ LINKS_API int LinksRandomSampling(char *paramFN) {
 	LinksRandomSampling(paramFN, linksParams);
 	return 0;
 }
+
+//Entrypoint functions for Spatial Links library
+LINKS_API int LinksCompleteSamplingLDE(char* paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB) {
+	msgText = msgTextCB;
+	msgProgress = msgUpdateCB;
+	return LinksCompleteSamplingLDE(paramFN);
+}
+
+LINKS_API int LinksCompleteSamplingLDE(char* paramFN) {
+	LinksParams linksParams;
+	msgText("Running Links with complete sampling");
+	LinksCompleteSamplingLDE(paramFN, linksParams);
+	return 0;
+}

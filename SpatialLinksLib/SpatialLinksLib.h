@@ -53,4 +53,9 @@ LINKS_API int LinksCompleteSamplingAltDstHab(char *paramFN, msgTextFP msgTextCB,
 LINKS_API int LinksRandomSampling(char *paramFN);
 LINKS_API int LinksRandomSampling(char *paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
 
+LINKS_API int LinksCompleteSamplingLDE(char* paramFN);
+LINKS_API int LinksCompleteSamplingLDE(char* paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
+
+
+
 #endif

@@ -77,6 +77,7 @@ public:
 
 	//Constructor for square grid(with centre) resizes cellNodes and assigns node locations
 	CellNodeGrid() : CellNodeGrid(0) {}
+	
 	CellNodeGrid(size_t windowSize) {
 		nRows = windowSize;
 		nCols = windowSize;
@@ -89,6 +90,7 @@ public:
 			}
 		}
 	}
+		
 	CellNodeGrid(size_t windowSize, double searchRadiusCellsSqrd) : CellNodeGrid(windowSize) {
 		setSearchRadiusSqrd(searchRadiusCellsSqrd);
 	}
@@ -142,7 +144,6 @@ class CellNodeHeap {
 private:
 	size_t heapSize;
 	size_t parent, min, left, right;
-	CellNode *tmp;
 	CellNode * minNode;
 	std::vector<CellNode*> minHeap;
 
@@ -153,7 +154,6 @@ private:
 			
 			//parent cost is higher so swap
 			std::swap(minHeap[k], minHeap[parent]);
-
 			minHeap[k]->heapPos = k;
 			minHeap[parent]->heapPos = parent;
 
@@ -175,7 +175,6 @@ private:
 
 			//child with lower cost found so swap
 			std::swap(minHeap[k], minHeap[min]);
-
 			minHeap[min]->heapPos = min;
 			minHeap[k]->heapPos = k;
 
@@ -193,7 +192,6 @@ public:
 		min = 0;
 		left = 0;
 		right = 0;
-		tmp = nullptr;
 		minNode = nullptr;
 		minHeap.resize(size + 1, nullptr);
 	}
@@ -211,7 +209,6 @@ public:
 	}
 		
 	//Move node up the heap if needed
-	//void decrease(int k) {
 	void decrease(CellNode *node) {
 			upHeap(node->heapPos);
 	}
@@ -231,7 +228,6 @@ public:
 
 			if (--heapSize > 1) downHeap(1);
 		}
-		//std::cout << "heap pop: " << minNode->cost << std::endl;
 		return minNode;
 	}
 };
