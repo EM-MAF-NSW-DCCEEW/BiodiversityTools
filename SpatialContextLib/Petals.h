@@ -27,39 +27,46 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 
 int CreatePetals(const std::string & outFN, int srcSize, int dstSize, float zoneRatio, bool createFiles, CBAParams &p);
 
+
+//Old style functions
 bool CreatePetalData(const char *translateFN, const char *lookupFN, const char *baseFN, CBAParams &p);
 bool CreatePetalData(const std::string & translateFN, const std::string & lookupFN, const std::string  & baseFN, CBAParams &p);
 
 int GetPetalFiles(const std::string & paramFN, const std::string & paramSection, const std::string workDir, std::string & lookupFN, std::string & translateFN, CBAParams &p);
 int GetPetalFiles(const std::string & paramFN, const std::string & paramSection, std::string & lookupFN, std::string & translateFN, CBAParams &p);
 
-
 int CreateSegments(int radCells, int nRings, int nSlices, double zoneRatio, const std::string & outFN, CBAParams &p);
 int CreateSegments(int radCells, int nRings, int nSlices, std::vector<double> radList, const std::string & outFN, CBAParams &p);
 
 
-int CreateSearchWindow(const std::string & paramFN);
-
-int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection);
-
+//Search window functions
+//int CreateSearchWindow(const std::string & paramFN);
+//int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection);
 int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection, CBAParams & p);
 
+
+//Petal functions
 int CreateLookupAndTranslateFromFiles(std::map<int, std::vector<int2>>& lookup, std::map<int, int2>& translate, uint & srcSize, uint & dstSize, const std::string & lookupFN, const std::string & translateFN);
-
 int CreateLookupAndTranslateFromParameters(std::map<int, std::vector<int2>>& lookup, std::map<int, int2>& translate, const uint & srcSize, const uint & dstSize, const double & zoneRatio);
+int CreateGPUDataFromLookupAndTranslate(CBAParams& p, const std::map<int, std::vector<int2>>& lookup, const std::map<int, int2>& translate, const uint& srcSize, const uint& dstSize);
 
-int CreateWindowGridFromGridFile(std::unique_ptr<int[]>& windowGrid, uint & srcSize, uint & dstSize, const std::string & windowGridFN);
+//Segment functions
+int CreateSegmentRadListFromParameters(std::vector<double>& radList, const int & radCells, const int & nBands, const double & zoneRatio);
+int CreateLookupFromSegmentRadList(std::map<int, std::vector<int2>>& lookup, uint& srcSize, const std::vector<double>& radList);
+bool GetSegmentNeighbours(const int segmentID, const int nBands, int * n);
+int CreateGPUDataFromSegmentLookup(CBAParams & p, const std::map<int, std::vector<int2>>& lookup, const int & nBands, const uint & srcSize);
 
-int CreateSegmentRadListFromParameters(std::vector<double>& radList, const int & radCells, const int & nRings, const double & zoneRatio);
+//Window grid functions
+int CreateWindowGridFromLookup(std::unique_ptr<int[]>& windowGrid, const std::map<int, std::vector<int2>>& lookup, const uint& srcSize);
+int WriteWindowGridToFile(const std::unique_ptr<int[]>& windowGrid, const std::string& windowGridFN, const uint& srcSize);
 
-int CreateWindowGridFromSegmentRadList(std::unique_ptr<int[]>& windowGrid, uint & srcSize, uint & dstSize, const std::vector<double>& radList);
+int WritePetalDataToTextFile(const CBAParams& p, const std::string& petalDataFN);
 
-int CreateWindowGridFromLookup(std::unique_ptr<int[]>& windowGrid, const std::map<int, std::vector<int2>>& lookup, const uint & srcSize);
 
-int CreateGridFileFromWindowGrid(const std::unique_ptr<int[]>& windowGrid, const std::string & windowGridFN, const uint & srcSize);
+//Deleted functions
+//int CreateWindowGridFromGridFile(std::unique_ptr<int[]>& windowGrid, uint& srcSize, uint& dstSize, const std::string& windowGridFN);
+//int CreateWindowGridFromSegmentRadList(std::unique_ptr<int[]>& windowGrid, uint & srcSize, const std::vector<double>& radList);
+//int CreateLookupFromWindowGrid(std::map<int, std::vector<int2>>& lookup, const std::unique_ptr<int[]>& windowGrid, const uint& srcSize);
 
-bool GetSegmentNeighbours(const int segmentID, const int nRings, int * n);
-
-int CreateGPUDataFromSegmentsLookup(CBAParams & p, const std::map<int, std::vector<int2>>& lookup, const int & nRings, const uint & srcSize);
 
 #endif

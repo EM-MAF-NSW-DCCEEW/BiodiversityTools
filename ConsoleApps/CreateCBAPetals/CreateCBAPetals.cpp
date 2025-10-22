@@ -1,5 +1,5 @@
 /*
-CreateCBAPetals.cpp - Console app for running a context CBA analysis
+CreateCBAPetals.cpp - Console app for creating a CBA petal configuration
 Copyright(C) 2024 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW)
 NSW DCCEEW Metrics and Forecasting Ecological Modelling Team 
 ecological.modelling@environment.nsw.gov.au

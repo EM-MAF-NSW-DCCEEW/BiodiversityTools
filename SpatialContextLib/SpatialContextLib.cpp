@@ -231,6 +231,16 @@ CUDA_CBA_API int CreateSegments(int radCells, int nRings, int nSlices, double zo
 	return CreateSegments(radCells, nRings, nSlices, zoneRatio, std::string(outFN), params);
 }
 
+//Search window exported functions
+CUDA_CBA_API int CreateSearchWindow(const std::string& paramFN) {
+	return CreateSearchWindow(paramFN, "WINDOW");
+}
+CUDA_CBA_API int CreateSearchWindow(const std::string& paramFN, const std::string& paramSection) {
+	CBAParams params;
+	return CreateSearchWindow(paramFN, paramSection, params);
+}
+
+
 //Exported External C functions
 extern "C" {
 	//Context CBA externalC functions

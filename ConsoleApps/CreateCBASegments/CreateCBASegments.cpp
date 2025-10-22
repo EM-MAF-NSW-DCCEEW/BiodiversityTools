@@ -1,5 +1,5 @@
 /*
-CreateCBASegments.cpp - TODO Description
+CreateCBASegments.cpp - Console application to create CBA segments
 Copyright(C) 2024 State of New South Wales and Department of Climate Change, Energy, the Environment and Water (DCCEEW)
 NSW DCCEEW Metrics and Forecasting Ecological Modelling Team 
 ecological.modelling@environment.nsw.gov.au

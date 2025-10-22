@@ -112,9 +112,10 @@ int ContinuousMBV(const std::string & paramFN, CBAParams &params) {
 	if (!CopyFS(HeaderFN(habFN), HeaderFN(outFN + "_num"), true)) return msgErrorStr(-8, HeaderFN(tmpFN), HeaderFN(outFN + "_num"));
 	if (!CopyFS(HeaderFN(habFN), HeaderFN(outFN + "_den"), true)) return msgErrorStr(-8, HeaderFN(tmpFN), HeaderFN(outFN + "_den"));
 	if (!CopyFS(HeaderFN(habFN), HeaderFN(outFN + "_samples"), true)) return msgErrorStr(-8, HeaderFN(tmpFN), HeaderFN(outFN + "_samples"));
-	CountDataCells(GridFN(habFN), nDataCells);
 	
-	if (nDataCells > ull(UINT_MAX)) return msgError(-99, "nDataCells overflows uint. Grid sizes over 2^31 not supported");
+	CountDataCells(GridFN(habFN), nDataCells);
+	if (nDataCells > ull(UINT_MAX)) return msgError(-99, "nDataCells overflows uint. Grid sizes over 2^32 not supported");
+	
 	if (params.maxSamples > 0) params.sampleRate = uint(nDataCells) / params.maxSamples;
 	else if (params.sampleRate > 0) params.maxSamples = uint(nDataCells) / params.sampleRate;
 	else return -1;

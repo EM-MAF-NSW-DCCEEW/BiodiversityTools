@@ -103,6 +103,9 @@ CUDA_CBA_API int GetPetalFiles(const std::string & paramFN, const std::string & 
 CUDA_CBA_API int CreateSegments(int radCells, int nRings, int nSlices, std::vector<double> radList, const char *outFN);
 CUDA_CBA_API int CreateSegments(int radCells, int nRings, int nSlices, double zoneRatio, const char *outFN);
 
+//Search window functions
+CUDA_CBA_API int CreateSearchWindow(const std::string& paramFN);
+CUDA_CBA_API int CreateSearchWindow(const std::string& paramFN, const std::string& paramSection);
 
 
 #endif

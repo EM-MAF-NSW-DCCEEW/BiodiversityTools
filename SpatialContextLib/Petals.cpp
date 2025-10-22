@@ -45,49 +45,20 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 //TODO no longer need to create or use petal lookup and translate files.
 //TODO replace ints with uints where appropriate
 
-/*
-Proposed create search window functions
-
-int CreateSearchWindow(const std::string & paramFN)
-int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection)
-int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection, CBAParams &p)
-
-int CreatePetals(const std::string & lookupFN, const std::string translateFN)
-int CreatePetals(int srcSize, int dstSize, double zoneRatio)
-
-int CreateSegments(int radCells, int nRings, int nSlices, double zoneRatio)
-int CreateSegments(std::vector<double> radList)
-
-int CreateSearchWindowFromGrid()
-int CreateSearchWindowFromGPUData()
-
-*/
-
-
 //Define M_PI if not defined
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-int CreateSearchWindow(const std::string & paramFN)
-{
-	return CreateSearchWindow(paramFN, "WINDOW");
-}
-
-int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection)
-{
-	CBAParams p;
-	return CreateSearchWindow(paramFN, paramSection, p);
-}
-
 int CreateSearchWindow(const std::string & paramFN, const std::string & paramSection, CBAParams &p)
 {
-	std::string lookupFN, translateFN;
+	std::string lookupFN, translateFN, windowGridFN, petalDataFN;
 	uint srcSize, dstSize;
 	double zoneRatio;
 	int radCells, nRings;
+	int returnValue = 0;
 
-
+	//Data structures
 	std::map<int, std::vector<int2>> lookup;	//Petal ID, vector(pair(cell.x, cell.y))
 	std::map<int, int2> translate; //Petal ID, pair(dst.x, dst.y)
 	std::vector<double> radList;
@@ -95,37 +66,61 @@ int CreateSearchWindow(const std::string & paramFN, const std::string & paramSec
 
 
 	//Read params to work out what we've got
+	//Create petals from lookup and translate files
 	if (GetParam(paramFN, paramSection, "LOOKUP_FN", lookupFN) && FileExists(lookupFN) &&
 		GetParam(paramFN, paramSection, "TRANSLATE_FN", translateFN) && FileExists(translateFN)) {
 	
 		CreateLookupAndTranslateFromFiles(lookup, translate, srcSize, dstSize, lookupFN, translateFN);
+		CreateGPUDataFromLookupAndTranslate(p, lookup, translate, srcSize, dstSize);
+	
 	}
-	else if (GetParam(paramFN, paramSection, "SRCSIZE", srcSize) &&
+	//Create petals from parameters
+	else 
+	if (GetParam(paramFN, paramSection, "SRCSIZE", srcSize) &&
 		GetParam(paramFN, paramSection, "DSTSIZE", dstSize) &&
 		GetParam(paramFN, paramSection, "ZONERATIO", zoneRatio)) {
 
 		CreateLookupAndTranslateFromParameters(lookup, translate, srcSize, dstSize, zoneRatio);
+		CreateGPUDataFromLookupAndTranslate(p, lookup, translate, srcSize, dstSize);
 	}
+	//Create segments from parameters
 	else if (GetParam(paramFN, paramSection, "RADIUS", radCells) &&
 		GetParam(paramFN, paramSection, "N_RINGS", nRings) &&
 		GetParam(paramFN, paramSection, "ZONERATIO", zoneRatio)) {
 
 		CreateSegmentRadListFromParameters(radList, radCells, nRings, zoneRatio);
+		CreateLookupFromSegmentRadList(lookup, srcSize, radList);
+		CreateGPUDataFromSegmentLookup(p, lookup, nRings, srcSize);
 	}
+	//Create segments from radius list
 	else if (GetParam(paramFN, paramSection, "RADIUSLIST", radList)) {
-		CreateWindowGridFromSegmentRadList(windowGrid, srcSize, dstSize, radList);
-		
+		nRings = (int)radList.size();
+		if (nRings < 1) return msgErrorStr(-1, "RADIUSLIST has no values", paramFN);
+		CreateLookupFromSegmentRadList(lookup, srcSize, radList);
+		CreateGPUDataFromSegmentLookup(p, lookup, nRings, srcSize);
 	}
 	else return msgErrorStr(-1, "for search window " + paramSection, paramFN);
-	return 0;
+
+	if (GetParam(paramFN, paramSection, "WINDOWGRID_FN", windowGridFN)) {
+		CreateWindowGridFromLookup(windowGrid, lookup, srcSize);
+		WriteWindowGridToFile(windowGrid, windowGridFN, srcSize);
+	}
+
+	if (GetParam(paramFN, paramSection, "PETALDATA_FN", petalDataFN)) {
+		WritePetalDataToTextFile(p, petalDataFN);
+	}
+
+	return returnValue;
 }
 
-//Create lookup & translate from LU & TR files
+//Create lookup & translate from files
 int CreateLookupAndTranslateFromFiles(std::map<int, std::vector<int2>> & lookup, std::map<int, int2> & translate, uint & srcSize, uint & dstSize, const std::string & lookupFN, const std::string & translateFN)
 {
 	std::string line, idStr, xStr, yStr;
 	int nPetals = 0;
+	int xMax = 0, yMax = 0;
 
+	//Read lookup file
 	std::ifstream lookupFS(lookupFN, std::ios::in);
 	if (!lookupFS.is_open()) return msgErrorStr(-3, lookupFN);
 	while (std::getline(lookupFS, line)) {
@@ -135,19 +130,11 @@ int CreateLookupAndTranslateFromFiles(std::map<int, std::vector<int2>> & lookup,
 		std::getline(lss, yStr);
 		lookup[std::stoi(idStr)].push_back({ std::stoi(xStr), std::stoi(yStr) });
 		nPetals = max(nPetals, std::stoi(idStr));
-		srcSize = max(srcSize, (uint) std::stoi(xStr));
-		srcSize = max(srcSize, (uint) std::stoi(yStr));
+		xMax = max(xMax, (uint) std::stoi(xStr));
+		yMax = max(yMax, (uint) std::stoi(yStr));
 	}
 
-	srcSize += 1;
-	if (srcSize % 2 != 1) return msgErrorStr(-99, "Source window size is even", toStr(srcSize));
-
-	//long double sr = std::sqrt(long double(nPetals + 1)); error: expected primary-expression before 'long'
-	double sr = std::sqrt(double(nPetals + 1));
-	if ((sr - std::floor(sr)) != 0.0L) return msgErrorStr(-99, "Destination window not square", toStr(nPetals + 1));
-	dstSize = uint(sr);
-	if (dstSize % 2 != 1) return msgErrorStr(-99, "Destination window size is even", toStr(dstSize));
-
+	//Read translate file
 	std::ifstream translateFS(translateFN, std::ios::in);
 	if (!translateFS.is_open()) return msgErrorStr(-3, translateFN);
 	while (std::getline(translateFS, line)) {
@@ -158,6 +145,20 @@ int CreateLookupAndTranslateFromFiles(std::map<int, std::vector<int2>> & lookup,
 		translate[std::stoi(idStr)] = { std::stoi(xStr), std::stoi(yStr) };
 	}
 
+	srcSize = uint(xMax) + 1;
+	double dstSizeDbl = std::sqrt(double(nPetals + 1));
+	dstSize = uint(dstSizeDbl);
+
+	//Check petal data
+	if (nPetals < 1) return msgErrorStr(-99, "No petals in", lookupFN);
+	if (lookup.size() != nPetals) return msgErrorStr(-99, "lookup.size " + toStr(lookup.size()) + " != nPetals " + toStr(nPetals));
+	if (xMax < 2 || yMax < 2) return msgErrorStr(-99, "Source window too small " + toStr(xMax) +"x" + toStr(yMax));
+	if (xMax != yMax) return msgErrorStr(-99, "Source window not square " + toStr(xMax) + "x" + toStr(yMax));
+	if (srcSize % 2 != 1) return msgErrorStr(-99, "Source window size " + toStr(srcSize) + " must be odd");
+	if (std::floor(dstSizeDbl) != dstSizeDbl) return msgErrorStr(-99, "Destination window not square " + toStr(nPetals + 1));
+	if (dstSize % 2 != 1) return msgErrorStr(-99, "Destination window size " + toStr(dstSize) + " must be odd");
+	if (translate.size() != lookup.size() + 1) return msgErrorStr(-99, "Translate and lookup files don't match", toStr(translate.size()), toStr(lookup.size()));
+
 	return 0;
 }
 
@@ -165,14 +166,15 @@ int CreateLookupAndTranslateFromFiles(std::map<int, std::vector<int2>> & lookup,
 int CreateLookupAndTranslateFromParameters(std::map<int, std::vector<int2>> & lookup, std::map<int, int2> & translate, const uint & srcSize, const uint & dstSize, const double & zoneRatio)
 {
 	//Check numeric parameters
-	if (zoneRatio < 1.0) return msgErrorStr(-99, "Zone ratio is less than 1.0");
-	if (srcSize % 2 != 1 || dstSize % 2 != 1) return msgErrorStr(-99, "Source or destination window size is even");
-	if (srcSize < dstSize) return msgErrorStr(-99, "Source window size less than destination window size");
+	if (zoneRatio < 1.0) return msgErrorStr(-99, "Zone ratio must be greater or equal to 1.0");
+	if (srcSize % 2 != 1) return msgErrorStr(-99, "Source window size must be odd");
+	if (dstSize % 2 != 1) return msgErrorStr(-99, "Destination window size must be odd");
+	if (srcSize < dstSize) return msgErrorStr(-99, "Destination window size must be less than or equal to source window size");
 
 	int x, y;
-	int noData = -1;
 	int srcCentre = int(srcSize / 2);
 	int dstCentre = int(dstSize / 2);
+	int nPetals = dstSize * dstSize - 1;
 
 	//Create zonefactors
 	float rawSum = 0.0f, zoneSize = 0.0f, scaledSum = 0.0f;
@@ -214,6 +216,7 @@ int CreateLookupAndTranslateFromParameters(std::map<int, std::vector<int2>> & lo
 			x = srcCentre - zoneOffset + int(round(step));
 			translate[petalID] = { dstX++, dstY };
 			petalPoints[petalID] = { x, y };
+			petalID++;
 		}
 
 		//Right vertical y increasing
@@ -222,6 +225,7 @@ int CreateLookupAndTranslateFromParameters(std::map<int, std::vector<int2>> & lo
 			y = srcCentre - zoneOffset + int(round(step));
 			translate[petalID] = { dstX, dstY++ };
 			petalPoints[petalID] = { x, y };
+			petalID++;
 		}
 
 		//Bottom horizontal x decreasing
@@ -230,6 +234,7 @@ int CreateLookupAndTranslateFromParameters(std::map<int, std::vector<int2>> & lo
 			x = srcCentre + zoneOffset - int(round(step));
 			translate[petalID] = { dstX--, dstY };
 			petalPoints[petalID] = { x, y };
+			petalID++;
 		}
 
 		//Left vertical y decreasing
@@ -238,154 +243,232 @@ int CreateLookupAndTranslateFromParameters(std::map<int, std::vector<int2>> & lo
 			y = srcCentre + zoneOffset - int(round(step));
 			translate[petalID] = { dstX, dstY-- };
 			petalPoints[petalID] = { x, y };
+			petalID++;
 		}
 	}
 
-	//Create petal grid searching nearest petal point to allocate petal IDs to cells
-	double dist = 0.0f, minDist = 0.0f;
-	int pID;
+	////Create lookup from petal points
+	//double distSqrd = 0.0f, minDistSqrd = 0.0f;
+	//int petalID = -1;
+	//for (y = 0; y < srcSize; y++) {
+	//	for (x = 0; x < srcSize; x++) {
+	//		if (x != srcCentre || y != srcCentre) {
+	//			minDistSqrd = FLT_MAX;
+	//			for (const auto petalPoint : petalPoints) {
+	//				if (petalPoint.second.x == x && petalPoint.second.y == y) {
+	//					petalID = petalPoint.first;
+	//				}
+	//				else {
+	//					distSqrd = pow(abs(petalPoint.second.x - x), 2) + pow(abs(petalPoint.second.y - y), 2);
+	//					if (distSqrd < minDistSqrd) {
+	//						minDistSqrd = distSqrd;
+	//						petalID = petalPoint.first;
+	//					}
+	//				}
+	//			}
+	//			lookup[petalID].push_back({ x, y });
+	//		}
+	//	}
+	//}
+
+	//Create lookup from petal points
+	double distSqrd = 0.0f, minDistSqrd = 0.0f;
+	petalID = -1;
 	for (y = 0; y < srcSize; y++) {
 		for (x = 0; x < srcSize; x++) {
 			if (x != srcCentre || y != srcCentre) {
-				minDist = FLT_MAX;
-				for (const auto p : petalPoints) {
-					if (p.second.x == x && p.second.y == y) {
-						pID = p.first;
-					}
-					else {
-						dist = pow(abs(p.second.x - x), 2) + pow(abs(p.second.y - y), 2);
-						if (dist < minDist) {
-							minDist = dist;
-							pID = p.first;
-						}
+				petalID = -1;
+				minDistSqrd = FLT_MAX;
+				for (const auto petalPoint : petalPoints) {
+					distSqrd = pow(abs(petalPoint.second.x - x), 2) + pow(abs(petalPoint.second.y - y), 2);
+					if (distSqrd < minDistSqrd) {
+						minDistSqrd = distSqrd;
+						petalID = petalPoint.first;
 					}
 				}
-				lookup[pID].push_back({ x, y });
+				if (petalID < 0) return msgErrorStr(-99, "Petal ID < 1. Error in petal parameters.");
+				if (petalID > nPetals) return msgErrorStr(-99, "Petal ID >= nPetals. Error in petal parameters.");
+				lookup[petalID].push_back({ x, y });
 			}
 		}
 	}
+
 	return 0;
 }
 
 
-
-
-//Create window grid from grid file
-int CreateWindowGridFromGridFile(std::unique_ptr<int[]> & windowGrid, uint & srcSize, uint & dstSize, const std::string & windowGridFN)
-{
-	igstream windowGridGS(windowGridFN);
-	if (!windowGridGS.is_open()) return msgErrorStr(-3, windowGridFN);
-	if (windowGridGS.dataType() != 5) return msgErrorStr(-99, "Data type is not int32", windowGridFN);
-	
-	uint nCols = windowGridGS.nCols();
-	uint nRows = windowGridGS.nRows();
-	if (nCols < 1 || nRows < 1) return msgErrorStr(-99, "0 columns or rows in", windowGridFN);
-	if (nCols != nRows) return msgErrorStr(-99, "Source window not square " + windowGridFN, "\nCols: " + toStr(nCols), " Rows: " + toStr(nRows));
-	if (nCols % 2 != 1) return msgErrorStr(-99, "Source window size is even", toStr(srcSize));
-	uint gridSize = nCols * nRows;
-	srcSize = uint(nCols);
-
-	windowGrid = std::make_unique<int[]>(gridSize);
-	windowGridGS.read((char *)(windowGrid.get()), gridSize * sizeof(int));
-	int nPetals = 0;
-	for (int i = 0; i < gridSize; i++) nPetals = max(nPetals, windowGrid[i]);
-
-	//long double sr = sqrt(long double(nPetals + 1));	 error: expected primary-expression before 'long'
-	double sr = sqrt(double(nPetals + 1));
-	if ((sr - std::floor(sr)) != 0.0L) return msgErrorStr(-99, "Destination window not square", toStr(nPetals + 1));
-	dstSize = uint(sr);
-	if (dstSize % 2 != 1) return msgErrorStr(-99, "Destination window size is even", toStr(dstSize));
-	return 0;
-}
+////Create window grid from grid file
+//int CreateWindowGridFromGridFile(std::unique_ptr<int[]> & windowGrid, uint & srcSize, uint & dstSize, const std::string & windowGridFN)
+//{
+//	igstream windowGridGS(windowGridFN);
+//	if (!windowGridGS.is_open()) return msgErrorStr(-3, windowGridFN);
+//	if (windowGridGS.dataType() != 5) return msgErrorStr(-99, "Data type is not int32", windowGridFN);
+//	
+//	uint nCols = windowGridGS.nCols();
+//	uint nRows = windowGridGS.nRows();
+//	if (nCols < 1 || nRows < 1) return msgErrorStr(-99, "0 columns or rows in", windowGridFN);
+//	if (nCols != nRows) return msgErrorStr(-99, "Source window not square " + windowGridFN, "\nCols: " + toStr(nCols), " Rows: " + toStr(nRows));
+//	if (nCols % 2 != 1) return msgErrorStr(-99, "Source window size is even", toStr(srcSize));
+//	uint gridSize = nCols * nRows;
+//	srcSize = uint(nCols);
+//
+//	windowGrid = std::make_unique<int[]>(gridSize);
+//	windowGridGS.read((char *)(windowGrid.get()), gridSize * sizeof(int));
+//	int nPetals = 0;
+//	for (int i = 0; i < gridSize; i++) nPetals = max(nPetals, windowGrid[i]);
+//
+//	//long double sr = sqrt(long double(nPetals + 1));	 error: expected primary-expression before 'long'
+//	double sr = sqrt(double(nPetals + 1));
+//	if ((sr - std::floor(sr)) != 0.0L) return msgErrorStr(-99, "Destination window not square", toStr(nPetals + 1));
+//	dstSize = uint(sr);
+//	if (dstSize % 2 != 1) return msgErrorStr(-99, "Destination window size is even", toStr(dstSize));
+//	return 0;
+//}
 
 
 //Create segment radius list from parameters
-int CreateSegmentRadListFromParameters(std::vector<double> & radList, const int & radCells, const int & nRings, const double & zoneRatio)
+int CreateSegmentRadListFromParameters(std::vector<double> & radList, const int & radCells, const int & nBands, const double & zoneRatio)
 {
-	if (zoneRatio < 1.0f) return msgErrorStr(-99, "Zone ratio is less than 1.0");
-	if (radCells < 1) return msgErrorStr(-99, "Radius in cells is less than 1");
-	if (nRings < 1) return msgErrorStr(-99, "Number of rings is less than 1");
-	if (radCells < nRings) return msgErrorStr(-99, "Radius in cells is less than number of rings");
+	if (zoneRatio < 1.0f) return msgErrorStr(-99, "Zone ratio must be greater or equal to 1.0");
+	if (radCells < 1) return msgErrorStr(-99, "Radius in cells must be greater than 1");
+	if (nBands < 1) return msgErrorStr(-99, "Number of rings is less than 1");
+	if (radCells < nBands) return msgErrorStr(-99, "Radius in cells is less than number of rings");
 
 	//Create ring area list with area within each ring
-	double areaFactor = (pow(radCells, 2.0) * M_PI) / ((zoneRatio * (pow(zoneRatio, nRings) - 1.0)) / (zoneRatio - 1.0));
+	double areaFactor = (pow(radCells, 2.0) * M_PI) / ((zoneRatio * (pow(zoneRatio, nBands) - 1.0)) / (zoneRatio - 1.0));
 	std::vector<double> areaList;
 	areaList.push_back(0.0);
-	for (int r = 1; r < nRings + 1; r++) areaList.push_back(pow(zoneRatio, r) * areaFactor);
+	for (int r = 1; r < nBands + 1; r++) areaList.push_back(pow(zoneRatio, r) * areaFactor);
 
 	//Create ring radius list with outer radius of each ring
 	double areaSum = 0.0;
-	for (int r = 1; r < nRings + 1; r++) {
+	for (int r = 1; r < nBands + 1; r++) {
 		radList.push_back(sqrt((areaList[r] + areaSum) / M_PI));
 		areaSum += areaList[r];
 	}
 	return 0;
 }
 
-//Create window grid from segment radius list
-int CreateWindowGridFromSegmentRadList(std::unique_ptr<int[]> & windowGrid, uint & srcSize, uint & dstSize, const std::vector<double> & radList)//, const int & radCells, const int & nRings)
+////Create window grid from segment radius list
+//int CreateWindowGridFromSegmentRadList(std::unique_ptr<int[]> & windowGrid, uint & srcSize, const std::vector<double> & radList)
+//{
+//	//Check if first segments will be too small
+//	if (radList[0] < sqrt(2)) return msgErrorStr(-99, "First radius is less than SQRT(2) and would result in missing segments.");
+//	if (radList.size() < 1) return msgErrorStr(-99, "No rings in radius list.");
+//
+//	for (int r = 1; r < radList.size(); r++) {
+//		if (radList[r] <= radList[r - 1]) return msgErrorStr(-99, "Radius list not strictly increasing.");
+//	}
+//
+//
+//	//TODO check nBands and radCells from radList
+//	int nBands = (int) radList.size();
+//	int radCells = (int) std::ceil(radList[nBands - 1]);
+//	int nSectors = 8;
+//	int nSegments = nBands * nSectors;
+//	
+//	srcSize = radCells * 2 + 1;
+//	int halfSrcSize = srcSize / 2;
+//
+//	//Create window grid
+//	windowGrid = std::make_unique<int[]>(srcSize * srcSize);
+//	for (int i = 0; i < srcSize * srcSize; i++) windowGrid[i] = -1;
+//
+//	//Calc cell distance, degrees and segment ID to fill the lookup table, segment cell count and window grid 
+//	int segmentID = -1;
+//	double cellDist, cellDeg;
+//	for (int y = -halfSrcSize; y < 1 + halfSrcSize; y++) {
+//		for (int x = -halfSrcSize; x < 1 + halfSrcSize; x++) {
+//			segmentID = -1;
+//			cellDist = sqrt(pow(double(y), 2) + pow(double(x), 2));
+//			cellDeg = 180.0 - atan2(double(y), double(x)) * 180.0 / M_PI;
+//
+//			if (cellDist < 0.5) segmentID = 0;
+//			else {
+//				for (int r = 0; r < radList.size(); r++) {
+//					if (cellDist <= radList[r]) {
+//						segmentID = 1 + (r * nSectors) + int(floor(nSectors * (359 - (int(cellDeg + (180.0 / nSectors)) % 360)) / 360.0));
+//						break;
+//					}
+//				}
+//			}
+//			if (segmentID > nSegments) return msgErrorStr(-99, "Segment ID > nSegments. Error in segment parameters.");
+//			windowGrid[(y + halfSrcSize) * srcSize + (x + halfSrcSize)] = segmentID;
+//		}
+//	}
+//	return 0;
+//}
+
+//Create Lookup from segment radius list
+int CreateLookupFromSegmentRadList(std::map<int, std::vector<int2>>& lookup, uint& srcSize, const std::vector<double>& radList)
 {
-	//TODO dstSize?
+	//Check if first segments will be too small
+	if (radList.size() < 1) return msgErrorStr(-99, "No bands in radius list.");
+	if (radList[0] < sqrt(2)) return msgErrorStr(-99, "First band radius is less than SQRT(2) and would result in missing segments.");
+	for (int r = 1; r < radList.size(); r++) {
+		if (radList[r] <= radList[r - 1]) return msgErrorStr(-99, "Radius list not strictly increasing.");
+	}
 
-	//Check if first segments will be too small 
-	if (radList[0] < sqrt(2)) return msgErrorStr(-99, "First radius is less than SQRT(2) and would result in missing segments.");
+	//TODO check nBands and radCells from radList
+	int nBands = (int)radList.size();
+	int radCells = (int)std::ceil(radList[nBands - 1]);
+	int nSectors = 8;
+	//int nSegments = nBands * nSectors;
 
-	//TODO check nRings and radCells from radList
-	int nRings = (int) radList.size();
-	int radCells = (int) std::ceil(radList[nRings - 1]);
-	int nSlices = 8; //TODO Variable?
-	int nSegments = nRings * nSlices;
-	
 	srcSize = radCells * 2 + 1;
 	int halfSrcSize = srcSize / 2;
 
-	//Create window grid
-	windowGrid = std::make_unique<int[]>(srcSize * srcSize);
-	for (int i = 0; i < srcSize * srcSize; i++) windowGrid[i] = -1;
+	lookup.clear();
 
 	//Calc cell distance, degrees and segment ID to fill the lookup table, segment cell count and window grid 
-	int segID = -1;
+	int segmentID = -1;
 	double cellDist, cellDeg;
 	for (int y = -halfSrcSize; y < 1 + halfSrcSize; y++) {
 		for (int x = -halfSrcSize; x < 1 + halfSrcSize; x++) {
-			segID = -1;
+			segmentID = -1;
 			cellDist = sqrt(pow(double(y), 2) + pow(double(x), 2));
 			cellDeg = 180.0 - atan2(double(y), double(x)) * 180.0 / M_PI;
 
-			if (cellDist < 0.5) segID = 0;
+			if (cellDist < 0.5) 
+				segmentID = 0;
 			else {
 				for (int r = 0; r < radList.size(); r++) {
 					if (cellDist <= radList[r]) {
-						segID = 1 + (r * nSlices) + int(floor(nSlices * (359 - (int(cellDeg + (180.0 / nSlices)) % 360)) / 360.0));
+						segmentID = 1 + (r * nSectors) + int(floor(nSectors * (359 - (int(cellDeg + (180.0 / nSectors)) % 360)) / 360.0));
 						break;
 					}
 				}
+
+				if (segmentID != -1) {
+					lookup[segmentID].push_back({ x + halfSrcSize, y + halfSrcSize });
+				}
 			}
-			if (segID > nSegments) return msgErrorStr(-99, "Segment ID > nSegments. Error in segment parameters.");
-			windowGrid[(y + halfSrcSize) * srcSize + (x + halfSrcSize)] = segID;
+			//if (segmentID >= nSegments) return msgErrorStr(-99, "Segment ID >= nSegments. Error in segment parameters.");
 		}
 	}
 	return 0;
 }
 
-//Create lookup from window grid
-int CreateLookupFromWindowGrid(std::map<int, std::vector<int2>> & lookup, const std::unique_ptr<int[]> & windowGrid, const uint & srcSize) {
-	int x, y;
-	lookup.clear();
-	for (y = 0; y < srcSize; y++) {
-		for (x = 0; x < srcSize; x++) {
-			if (windowGrid[(y*srcSize) + x] > 0)
-				lookup[windowGrid[(y*srcSize) + x]].push_back({ x, y });
-		}
-	}
-	return 0;
-}
+
+////Create lookup from window grid
+//int CreateLookupFromWindowGrid(std::map<int, std::vector<int2>> & lookup, const std::unique_ptr<int[]> & windowGrid, const uint & srcSize) {
+//	int x, y;
+//	lookup.clear();
+//	for (y = 0; y < srcSize; y++) {
+//		for (x = 0; x < srcSize; x++) {
+//			if (windowGrid[(y*srcSize) + x] > 0)
+//				lookup[windowGrid[(y*srcSize) + x]].push_back({ x, y });
+//		}
+//	}
+//	return 0;
+//}
 
 //Create window grid from lookup
 int CreateWindowGridFromLookup(std::unique_ptr<int[]> & windowGrid, const std::map<int, std::vector<int2>> & lookup, const uint & srcSize)
 {
 	//Make window grid from lookup
 	uint srcCentre = uint(srcSize / 2);
+	windowGrid.reset();
 	windowGrid = std::make_unique<int[]>(srcSize * srcSize);
 	for (int c = 0; c < srcSize * srcSize; c++) windowGrid[c] = -1;
 	windowGrid[srcCentre * srcSize + srcCentre] = 0;
@@ -398,7 +481,7 @@ int CreateWindowGridFromLookup(std::unique_ptr<int[]> & windowGrid, const std::m
 }
 
 //Create grid file from window grid
-int CreateGridFileFromWindowGrid(const std::unique_ptr<int[]> & windowGrid, const std::string & windowGridFN, const uint & srcSize) {
+int WriteWindowGridToFile(const std::unique_ptr<int[]> & windowGrid, const std::string & windowGridFN, const uint & srcSize) {
 	
 	ogstream windowGridGS(TifFN(windowGridFN));
 	windowGridGS.setTifOptions("LZW", 5, 1);
@@ -407,9 +490,48 @@ int CreateGridFileFromWindowGrid(const std::unique_ptr<int[]> & windowGrid, cons
 	windowGridGS.write((char *)windowGrid.get(), srcSize * srcSize * (sizeof(int)));
 	return 0;
 }
+//Write petal data to text file
+int WritePetalDataToTextFile(const CBAParams& p, const std::string& petalDataFN) {
+
+	std::ofstream petalDataFS(petalDataFN, std::ios::out);
+	if (!petalDataFS.is_open()) return msgErrorStr(-4, petalDataFN);
+	for (uint j = 0; j < p.petalRows; j++)
+		for (uint k = 0; k < p.petalCols; k++)
+			petalDataFS << "" << p.petalPtr[j * p.petalCols + k].x << "," << p.petalPtr[j * p.petalCols + k].y << (k + 1 < p.petalCols ? "\t" : "\n");
+	return 0;
+}
+
+////Write petal data to binary file
+//bool WritePetalDataToBinFile(const CBAParams& p, const std::string& petalDataFN) {
+//	std::ofstream petalDataFS(petalDataFN, std::ios::out | std::ios::binary);
+//	if (!petalDataFS.is_open()) return false;
+//	petalDataFS.write((char*)&p.fOffset, sizeof(int));
+//	petalDataFS.write((char*)&p.nPetals, sizeof(int));
+//	petalDataFS.write((char*)&p.petalCols, sizeof(int));
+//	petalDataFS.write((char*)&p.petalRows, sizeof(int));
+//	petalDataFS.write((char*)&p.firstReduction, sizeof(int));
+//	petalDataFS.write((char*)p.petalPtr.get(), p.petalCols * p.petalRows * sizeof(int2));
+//	petalDataFS.close();
+//	return true;
+//}
+//
+//bool ReadPetalDataFromBinFile(CBAParams& p, const std::string& petalDataFN) {
+//	std::ifstream petalDataFS(petalDataFN, std::ios::in | std::ios::binary);
+//	if (!petalDataFS.is_open()) return false;
+//	petalDataFS.read((char*)&p.fOffset, sizeof(int));
+//	petalDataFS.read((char*)&p.nPetals, sizeof(int));
+//	petalDataFS.read((char*)&p.petalCols, sizeof(int));
+//	petalDataFS.read((char*)&p.petalRows, sizeof(int));
+//	petalDataFS.read((char*)&p.firstReduction, sizeof(int));
+//	p.petalPtr = std::make_unique<int2[]>(p.petalCols * p.petalRows);
+//	petalDataFS.read((char*)p.petalPtr.get(), p.petalCols * p.petalRows * sizeof(int2));
+//	petalDataFS.close();
+//	return true;
+//}
 
 //Create GPU data from lookup and translate
 int CreateGPUDataFromLookupAndTranslate(CBAParams &p, const std::map<int, std::vector<int2>> & lookup, const std::map<int, int2> & translate, const uint & srcSize, const uint & dstSize) {
+	
 	//Set search window parameters and initialise petal data storage
 	int maxCells = 1, cellsStart = 5, petalsRow;
 	for (auto petal : lookup) maxCells = max(maxCells, int(petal.second.size()));
@@ -452,7 +574,7 @@ int CreateGPUDataFromLookupAndTranslate(CBAParams &p, const std::map<int, std::v
 	return 0;
 }
 
-bool GetSegmentNeighbours(const int segmentID, const int nRings, int *n) {
+bool GetSegmentNeighbours(const int segmentID, const int nBands, int *n) {
 	try {
 		n[0] = segmentID + 8;//n
 		n[1] = segmentID - 8;//s
@@ -462,7 +584,7 @@ bool GetSegmentNeighbours(const int segmentID, const int nRings, int *n) {
 		n[5] = n[3] + 8;//nw
 		n[6] = n[2] - 8;//se
 		n[7] = n[3] - 8;//sw
-		if (n[0] > 8 * nRings) {
+		if (n[0] > 8 * nBands) {
 			n[0] = -1;//n
 			n[4] = -1;//ne
 			n[5] = -1;//nw
@@ -478,10 +600,9 @@ bool GetSegmentNeighbours(const int segmentID, const int nRings, int *n) {
 }
 
 //Create GPU data from lookup and neighbours
-int CreateGPUDataFromSegmentsLookup(CBAParams & p, const std::map<int, std::vector<int2>> & lookup, const int & nRings, const uint & srcSize) {
+int CreateGPUDataFromSegmentLookup(CBAParams & p, const std::map<int, std::vector<int2>> & lookup, const int & nBands, const uint & srcSize) {
 	
-	//int nSlices = 8;
-	uint nSegments = (uint) lookup.size(); // nRings * nSlices;
+	uint nSegments = (uint) lookup.size(); // nBands * nSectors;
 	uint nCols = uint(ceil(float(nSegments) / 32.0f) * 32);
 
 	//Allocate CUDA CBA segment data with maxCells rows and init to (-1, -1)
@@ -493,14 +614,14 @@ int CreateGPUDataFromSegmentsLookup(CBAParams & p, const std::map<int, std::vect
 	for (int i = 0; i < nRows * nCols; i++)	p.petalPtr[i] = { -1, -1 };
 
 	//Create CUDA CBA segment data
-	int n[8];
+	int neighbours[8];
 	for (int s = 0; s < nSegments; s++) {
-		if (!GetSegmentNeighbours(s + 1, nRings, n)) return msgErrorStr(-99, "Unable to calculate segment neighbours");
+		if (!GetSegmentNeighbours(s + 1, nBands, neighbours)) return msgErrorStr(-99, "Unable to calculate segment neighbours");
 		//Neighbours
-		p.petalPtr[s] = { n[0], n[1] };
-		p.petalPtr[nCols + s] = { n[2], n[3] };
-		p.petalPtr[2 * nCols + s] = { n[4], n[5] };
-		p.petalPtr[3 * nCols + s] = { n[6], n[7] };
+		p.petalPtr[s] = { neighbours[0], neighbours[1] };
+		p.petalPtr[nCols + s] = { neighbours[2], neighbours[3] };
+		p.petalPtr[2 * nCols + s] = { neighbours[4], neighbours[5] };
+		p.petalPtr[3 * nCols + s] = { neighbours[6], neighbours[7] };
 		//Segment ID and cell count
 		p.petalPtr[4 * nCols + s] = { int(lookup.at(s + 1).size()), s + 1 };
 		//Segment cell's x and y
