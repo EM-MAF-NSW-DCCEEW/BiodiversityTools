@@ -83,10 +83,17 @@ CUDA_CBA_API int OccupancyCBA_TS(const char * paramFN, msgTextFP msgTextCB, msgP
 ////GDM Similarity to Species Observations
 //CUDA_CBA_API int GDMSimToSpcObs(const char *paramFN);
 //CUDA_CBA_API int GDMSimToSpcObs(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
+
+//
+////Uniqueness
+CUDA_CBA_API int Uniqueness(const char* paramFN);
+CUDA_CBA_API int Uniqueness(const char* paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
+
 //
 ////Continuous MBV
 CUDA_CBA_API int ContinuousMBV(const char *paramFN);
 CUDA_CBA_API int ContinuousMBV(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB);
+
 //
 ////Continuous BDI
 //CUDA_CBA_API int ContinuousBDI(const char *paramFN);

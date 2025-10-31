@@ -38,6 +38,7 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "ContinuousMBV.h"
 //#include "ContinuousBDI.h"
 //#include "IterateSumNHab.h"
+#include "Uniqueness.h"
 
 //Exported functions
 
@@ -106,19 +107,6 @@ CUDA_CBA_API int OccupancyCBA_TS(const char *paramFN, msgTextFP msgTextCB, msgPr
 //	return ResilienceCBA(paramFN, params);
 //}
 //
-////Resilience CBA2 exported functions
-//CUDA_CBA_API int ResilienceCBA2(const char *paramFN) {
-//	CBAParams params;
-//	return ResilienceCBA2(paramFN, params);
-//}
-//
-//CUDA_CBA_API int ResilienceCBA2(const char * paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB) {
-//	CBAParams params;
-//	msgText = msgTextCB;
-//	msgProgress = msgUpdateCB;
-//	return ResilienceCBA2(paramFN, params);
-//}
-//
 ////Resilience Denominator exported functions
 //CUDA_CBA_API int ResilienceDenom(const char *paramFN) {
 //	CBAParams params;
@@ -170,7 +158,20 @@ CUDA_CBA_API int OccupancyCBA_TS(const char *paramFN, msgTextFP msgTextCB, msgPr
 //	msgProgress = msgUpdateCB;
 //	return GDMSimToSpcObs(paramFN, params);
 //}
-//
+
+//Uniqueness exported functions
+CUDA_CBA_API int Uniqueness(const char* paramFN) {
+	CBAParams params;
+	return Uniqueness(paramFN, params);
+}
+
+CUDA_CBA_API int Uniqueness(const char* paramFN, msgTextFP msgTextCB, msgProgressFP msgUpdateCB) {
+	CBAParams params;
+	msgText = msgTextCB;
+	msgProgress = msgUpdateCB;
+	return Uniqueness(paramFN, params);
+} 
+
 //Continuous MBV exported functions
 CUDA_CBA_API int ContinuousMBV(const char *paramFN) {
 	CBAParams params;

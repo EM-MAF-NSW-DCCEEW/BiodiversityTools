@@ -148,12 +148,15 @@ struct CBAParams {
 	std::vector<ogstream> outClassGSs;
 	std::vector<ogstream> outClassSimMaxGSs;
 	std::vector<ogstream> outClassSimAvgGSs;
+	
 	ogstream outClassMaxGS;
 	ogstream outClassAvgGS;
 	ogstream outnClassSamplesGS;
 	ogstream outObsSimMaxGS, outObsSimAvgGS;
 
 	ogstream sampleGridGS;
+
+	ogstream outUniquenessGS;
 
 	std::map<uint, uint2> classes;
 

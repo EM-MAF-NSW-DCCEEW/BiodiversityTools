@@ -1,5 +1,5 @@
 /*
-ContinuousMBV.cu - Experimental CUDA functions for calculating marginal biodiversity values from continuous GDM data
+Uniqueness.cu - Experimental CUDA functions for calculating uniqueness from continuous GDM data
 Copyright(C) 2023 State of New South Wales and Department of Planning and Environment
 Author: Jamie Love, SEI Metrics and Forecasting
 
@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef _CONTINUOUS_MBV_KERNEL_CU_
-#define _CONTINUOUS_MBV_KERNEL_CU_
+#ifndef _UNIQUENESS_KERNEL_CU_
+#define _UNIQUENESS_KERNEL_CU_
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <stdio.h>
@@ -30,16 +30,14 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "FileUtilsLib.h"
 
 //Sij = sum(exp(sum(-|srcTxi - dstTxj|)))
+//Dij = sum(1 - exp(sum(-|srcTxi - dstTxj|)))
 //This kernel function gets called on the device operating for every pixel in a row of data in parallel
-//For 25 tx grids and 500,000 samples this performs 888,427 billion subtractions!
 
-//txSrcData[0 + cell] and txDstSamples[s + 0] store habitat condition for the focal pixel and samples
-
-__global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *txDstSamples, float2 *outData)
+__global__ void Uniqueness_kernel(size_t nSampled, float* txSrcData, float* txDstSamples, float* outData)
 {
 	size_t cell = size_t(blockIdx.x * blockDim.x + threadIdx.x);
 	size_t nColsAligned = size_t(d_nColsAligned);
-	float sumDist = 0.0f, sumSij = 0.0f, sumHjSij = 0.0f, Hj;
+	float sumDist = 0.0f, sumDij = 0.0f;
 
 	//Check this thread is in the row
 	if (cell < d_nCols) {
@@ -52,8 +50,8 @@ __global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *t
 		add.s64 	txAddress, txPrevAddress, nColsAlignedBytes;
 		ld.global.f32 	txSrcVal, [txAddress];
 		*/
-		float Hi = txSrcData[cell];
-		if (Hi != d_noData) {
+		float txSrcPixel0 = txSrcData[cell];
+		if (txSrcPixel0 !=d_noData) {
 			float txSrcPixel1 = txSrcData[1ULL * nColsAligned + cell];
 			float txSrcPixel2 = txSrcData[2ULL * nColsAligned + cell];
 			float txSrcPixel3 = txSrcData[3ULL * nColsAligned + cell];
@@ -79,13 +77,12 @@ __global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *t
 			float txSrcPixel23 = txSrcData[23ULL * nColsAligned + cell];
 			float txSrcPixel24 = txSrcData[24ULL * nColsAligned + cell];
 			float txSrcPixel25 = txSrcData[25ULL * nColsAligned + cell];
-			//Currently only processing 25 tx grids after habitat so cut this short
-			//float txSrcPixel26 = txSrcData[26ULL * nColsAligned + cell];
-			//float txSrcPixel27 = txSrcData[27ULL * nColsAligned + cell];
-			//float txSrcPixel28 = txSrcData[28ULL * nColsAligned + cell];
-			//float txSrcPixel29 = txSrcData[29ULL * nColsAligned + cell];
-			//float txSrcPixel30 = txSrcData[30ULL * nColsAligned + cell];
-			//float txSrcPixel31 = txSrcData[31ULL * nColsAligned + cell];
+			float txSrcPixel26 = txSrcData[26ULL * nColsAligned + cell];
+			float txSrcPixel27 = txSrcData[27ULL * nColsAligned + cell];
+			float txSrcPixel28 = txSrcData[28ULL * nColsAligned + cell];
+			float txSrcPixel29 = txSrcData[29ULL * nColsAligned + cell];
+			float txSrcPixel30 = txSrcData[30ULL * nColsAligned + cell];
+			float txSrcPixel31 = txSrcData[31ULL * nColsAligned + cell];
 
 			/*
 			Get txSrc - txDst distances, subtracting from 0, also manually unrolled for tx
@@ -100,7 +97,7 @@ __global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *t
 			*/
 			for (size_t s = 0ULL; s < nSampled; s++) {
 				sumDist = 0.0f;
-				Hj = txDstSamples[s * 32ULL + 0ULL];
+				sumDist -= fabsf(txSrcPixel0 - txDstSamples[s * 32ULL + 0ULL]);
 				sumDist -= fabsf(txSrcPixel1 - txDstSamples[s * 32ULL + 1ULL]);
 				sumDist -= fabsf(txSrcPixel2 - txDstSamples[s * 32ULL + 2ULL]);
 				sumDist -= fabsf(txSrcPixel3 - txDstSamples[s * 32ULL + 3ULL]);
@@ -126,48 +123,45 @@ __global__ void ContinuousMBV_kernel(size_t nSampled, float *txSrcData, float *t
 				sumDist -= fabsf(txSrcPixel23 - txDstSamples[s * 32ULL + 23ULL]);
 				sumDist -= fabsf(txSrcPixel24 - txDstSamples[s * 32ULL + 24ULL]);
 				sumDist -= fabsf(txSrcPixel25 - txDstSamples[s * 32ULL + 25ULL]);
-				//Currently only processing 25 tx grids after habitat so cut this short
-				//sumDist -= fabsf(txSrcPixel26 - txDstSamples[s * 32ULL + 26ULL]);
-				//sumDist -= fabsf(txSrcPixel27 - txDstSamples[s * 32ULL + 27ULL]);
-				//sumDist -= fabsf(txSrcPixel28 - txDstSamples[s * 32ULL + 28ULL]);
-				//sumDist -= fabsf(txSrcPixel29 - txDstSamples[s * 32ULL + 29ULL]);
-				//sumDist -= fabsf(txSrcPixel30 - txDstSamples[s * 32ULL + 30ULL]);
-				//sumDist -= fabsf(txSrcPixel31 - txDstSamples[s * 32ULL + 31ULL]);
-				//Calculate Sij for this pixel
-				sumSij += __expf(sumDist);
-				sumHjSij += Hj * __expf(sumDist);
+				sumDist -= fabsf(txSrcPixel26 - txDstSamples[s * 32ULL + 26ULL]);
+				sumDist -= fabsf(txSrcPixel27 - txDstSamples[s * 32ULL + 27ULL]);
+				sumDist -= fabsf(txSrcPixel28 - txDstSamples[s * 32ULL + 28ULL]);
+				sumDist -= fabsf(txSrcPixel29 - txDstSamples[s * 32ULL + 29ULL]);
+				sumDist -= fabsf(txSrcPixel30 - txDstSamples[s * 32ULL + 30ULL]);
+				sumDist -= fabsf(txSrcPixel31 - txDstSamples[s * 32ULL + 31ULL]);
+				//Calculate Dij for this pixel
+				sumDij += 1.0 - __expf(sumDist);
 			}
-			//Write Sij to the pixel in the output row
-			outData[cell].x = sumSij;
-			outData[cell].y = sumHjSij;
+			//Write Dij to the pixel in the output row
+			outData[cell] = sumDij;
 		}
 		else {
-			outData[cell].x = d_noData;
-			outData[cell].y = d_noData;
+			outData[cell] = d_noData;
 		}
 	}
 }
 
-int CUDAContinuousMBV(CBAParams &p)
+int CUDAUniqueness(CBAParams& p)
 {
 	CUDA(cudaDeviceSetCacheConfig(cudaFuncCache::cudaFuncCachePreferL1));
 
-	float *d_txDstSamples;
-	float *d_txSrcData;
-	float2 *d_outData;
+	float* d_txDstSamples;
+	float* d_txSrcData;
+	float* d_outData;
 	uint nThreads = 512;
 	uint nBlocks = p.nCols / nThreads + 1;
 	dim3 blockDim{ nThreads, 1U, 1U };
 	dim3 gridDim{ nBlocks, 1U, 1U };
 	uint nColsAligned = int(ceil(float(p.nCols) / 32.0f) * 32);
 
-	std::unique_ptr<float[]> habData = std::make_unique<float[]>(p.nCells);
+	//Allocate host memory
 	std::unique_ptr<float[]> h_txDstSamples = std::make_unique<float[]>(p.maxSamples * p.maxTxGrids);
 	std::unique_ptr<float[]> h_txSrcData = std::make_unique<float[]>(nColsAligned * p.maxTxGrids);
-	std::unique_ptr<float2[]> h_outData = std::make_unique<float2[]>(nColsAligned);
+	std::unique_ptr<float[]> h_outData = std::make_unique<float[]>(nColsAligned);
 	std::unique_ptr<float[]> sampleGrid = std::make_unique<float[]>(p.nCells);
 	std::unique_ptr<float[]> txData = std::make_unique<float[]>(p.nCells);
 
+	//Initialize host memory
 	for (uint i = 0; i < p.maxSamples * p.maxTxGrids; i++) h_txDstSamples[i] = 0.0f;
 	for (uint i = 0; i < nColsAligned * p.maxTxGrids; i++) h_txSrcData[i] = 0.0f;
 	for (uint i = 0; i < p.nCells; i++) sampleGrid[i] = 0.0f;
@@ -175,92 +169,96 @@ int CUDAContinuousMBV(CBAParams &p)
 	//Sample all txDst grids
 	std::cout << "Sampling " << p.nTxGrids << " grids\n";
 
-	float txVal = p.noData;
-	float habVal = p.noData;
-	float habNoData = p.noData;
-	float txNoData = p.noData;
+	float txVal = float(p.txDstGSs[0].noData());
+	float txNoData = float(p.txDstGSs[0].noData());
 	uint nSampled = 0, prevSampled = 0;
-
-	p.habInFS.read((char*)(habData.get()), p.nCells * sizeof(float));
 
 	for (uint tx = 0; tx < p.nTxGrids; tx++) {
 		msgProgress("Percent complete: ", tx * 100 / p.nTxGrids);
+		
 		p.txDstGSs[tx].read((char*)(txData.get()), p.nCells * sizeof(float));
-		txNoData = float(p.txDstGSs[tx].noData());
+
 		nSampled = 0;
+		
 		for (uint y = p.sampleStep; y < p.nRows - p.sampleStep; y += p.sampleStep) {
 			for (uint x = p.sampleStep; x < p.nCols - p.sampleStep; x += p.sampleStep) {
-				txVal = txData[y * p.nCols + x];
 				
+				txVal = txData.get()[y * p.nCols + x];
 				if (txVal == txNoData) continue;
-				h_txDstSamples[nSampled * p.maxTxGrids + tx + 1] = txVal;// + 1 for habitat
-				sampleGrid[y * p.nCols + x] = 1.0f;
+				h_txDstSamples[nSampled * p.maxTxGrids + tx] = txVal;
+				sampleGrid[y * p.nCols + x] = float(nSampled);
 				nSampled++;
-
-				if (tx == 0) {
-					habVal = habData[y * p.nCols + x];
-					if (habVal == habNoData) continue;
-					h_txDstSamples[nSampled * p.maxTxGrids + tx] = habVal;
-				}
-
 				if (nSampled == p.maxSamples) break;
 			}
+
 			if (nSampled == p.maxSamples) break;
 		}
-		if (tx > 0 && nSampled != prevSampled) return -1;
+
+		if (tx > 0 && nSampled != prevSampled) return msgErrorStr(-99, "Number of samples from " + p.txDstGSs[tx].fileName() + " don't match");
 		prevSampled = nSampled;
 	}
+
 	msgText("\rPercent complete: 100");
 
-	habData.reset();
 	txData.reset();
 
 	if (nSampled == 0) return -1;
 	std::cout << "\npixels sampled: \t\t" << nSampled << "\n";
 
-	//Write samples to output table and grid
-	for (uint s = 0; s < nSampled; s++)
+	//Write sample data to file
+	p.txDstSamplesFS << "Samples,";
+	for (uint tx = 0; tx < p.nTxGrids; tx++)
+		p.txDstSamplesFS << p.txDstGSs[tx].fileName() << (tx + 1 < p.nTxGrids ? "," : "\n");
+	
+	for (uint s = 0; s < nSampled; s++) {
+		p.txDstSamplesFS << s << ",";
 		for (uint tx = 0; tx < p.nTxGrids; tx++)
-			p.txDstSamplesFS << h_txDstSamples[s * p.maxTxGrids + tx] << (tx + 1 < p.nTxGrids ? ", " : "\n");
+			p.txDstSamplesFS << h_txDstSamples[s * p.maxTxGrids + tx] << (tx + 1 < p.nTxGrids ? "," : "\n");
+	}
+	p.txDstSamplesFS.close();
 
-	p.sampleGridFS.write((const char *)(sampleGrid.get()), p.nCols * p.nRows * sizeof(float));
-	p.sampleGridFS.close();
+	//Write sample grid to file
+	p.sampleGridGS.write((const char*)(sampleGrid.get()), p.nCells * sizeof(float));
+	p.sampleGridGS.close();
 	sampleGrid.reset();
 
 	//Allocate device memory and copy data from host
 	CUDA(cudaMalloc(&d_txDstSamples, nSampled * p.maxTxGrids * sizeof(float)));
 	CUDA(cudaMalloc(&d_txSrcData, nColsAligned * p.maxTxGrids * sizeof(float)));
-	CUDA(cudaMalloc(&d_outData, nColsAligned * sizeof(float2)));
+	CUDA(cudaMalloc(&d_outData, nColsAligned * sizeof(float)));
+	
 	CUDA(cudaMemcpyToSymbol(d_nCols, &(p.nCols), sizeof(uint)));
 	CUDA(cudaMemcpyToSymbol(d_nColsAligned, &(nColsAligned), sizeof(uint)));
-	CUDA(cudaMemcpyToSymbol(d_noData, &(habNoData), sizeof(uint)));
+	CUDA(cudaMemcpyToSymbol(d_noData, &(txNoData), sizeof(float)));
 	CUDA(cudaMemcpy(d_txDstSamples, h_txDstSamples.get(), nSampled * p.maxTxGrids * sizeof(float), cudaMemcpyHostToDevice));
 
+	//Process each row on the GPU
 	std::cout << "Processing " << p.nCells << " grid cells on the GPU\n";
 	for (uint r = 0; r < p.nRows; r++) {
 		msgProgress("Percent complete: ", r * 100 / p.nRows);
 
-		//Set the output row to 0
-		CUDA(cudaMemset(d_outData, 0, nColsAligned * sizeof(float2)));
+		//Set the output row to all 0
+		CUDA(cudaMemset(d_outData, 0, nColsAligned * sizeof(float)));
 
-		//Read in  txSrc rows and copy to device
+		//Read in txSrc rows and copy to device
 		for (uint tx = 0; tx < p.nTxGrids; tx++)
-			p.txSrcGSs[tx].read((char*)&(h_txSrcData[(tx + 1) * nColsAligned]), p.nCols * sizeof(float));// + 1 for habitat
+			p.txSrcGSs[tx].read((char*)&(h_txSrcData[tx * nColsAligned]), p.nCols * sizeof(float));
+		
+		//Copy txSrc rows to device
 		CUDA(cudaMemcpy(d_txSrcData, h_txSrcData.get(), nColsAligned * p.maxTxGrids * sizeof(float), cudaMemcpyHostToDevice));
 
 		//Call kernel to calculate Sij for all pixels in the row
-		ContinuousMBV_kernel <<< gridDim, blockDim >>> (size_t(nSampled), d_txSrcData, d_txDstSamples, d_outData);
+		Uniqueness_kernel <<< gridDim, blockDim >>> (size_t(nSampled), d_txSrcData, d_txDstSamples, d_outData);
 
-		//Copy row from device to host then write to disk
-		CUDA(cudaMemcpy(h_outData.get(), d_outData, nColsAligned * sizeof(float2), cudaMemcpyDeviceToHost));
-		for (uint c = 0; c < p.nCols; c++) {
-			p.denOutFS.write((const char*)&(h_outData[c].x), sizeof(float));
-			p.numOutFS.write((const char*)&(h_outData[c].y), sizeof(float));
-		}
+		//Copy output row from device to host then write to disk
+		CUDA(cudaMemcpy(h_outData.get(), d_outData, nColsAligned * sizeof(float), cudaMemcpyDeviceToHost));
+		p.outUniquenessGS.write((const char*)h_outData.get(), p.nCols * sizeof(float));
+
 	}
+
 	msgText("\rPercent complete: 100");
 
-	p.cxtOutFS.close();
+	p.outUniquenessGS.close();
 	//Clean up device memory
 	CUDA(cudaFree(d_txDstSamples));
 	CUDA(cudaFree(d_txSrcData));
@@ -269,7 +267,8 @@ int CUDAContinuousMBV(CBAParams &p)
 	cudaError_t cudaStatus = cudaGetLastError();
 	CUDA(cudaDeviceReset());
 	msgText((std::string("Device status ") + cudaGetErrorString(cudaStatus)).c_str());
-	msgText("CUDAResilienceDenom() Complete!");
+	msgText("CUDAUniqueness() Complete!");
 	return int(cudaStatus);
 }
-#endif
+#endif 
+/* _UNIQUENESS_KERNEL_CU_ */
