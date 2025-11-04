@@ -96,6 +96,8 @@ const float fltEps = FLT_MIN;//1.175494351e-38F
  //GDM Sim to class
  __constant__ __device__ uint d_nClasses = 0;
 
+ __constant__ __device__ float d_xIntercept= 0.0f;
+
 
  //Texture references
  //texture<float, cudaTextureType2D, cudaReadModeElementType> tex1Ref;

@@ -116,6 +116,8 @@ struct CBAParams {
 	uint sampleStep;
 	uint maxTxGrids;
 	float sampleRateF;
+	float xIntercept;
+
 	std::ofstream txDstSamplesFS;
 	std::ofstream sampleGridFS;
 

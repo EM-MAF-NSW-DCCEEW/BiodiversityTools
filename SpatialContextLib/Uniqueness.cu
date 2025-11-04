@@ -1,5 +1,5 @@
 /*
-Uniqueness.cu - Experimental CUDA functions for calculating uniqueness from continuous GDM data
+Uniqueness.cu - CUDA functions for calculating uniqueness from continuous GDM data
 Copyright(C) 2023 State of New South Wales and Department of Planning and Environment
 Author: Jamie Love, SEI Metrics and Forecasting
 
@@ -29,8 +29,8 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "Parameters.h"
 #include "FileUtilsLib.h"
 
-//Sij = sum(exp(sum(-|srcTxi - dstTxj|)))
-//Dij = sum(1 - exp(sum(-|srcTxi - dstTxj|)))
+//Sij = exp(b + sum(-|srcTxi - dstTxj|))
+//Dij = 1 - exp(b + sum(-|srcTxi - dstTxj|))
 //This kernel function gets called on the device operating for every pixel in a row of data in parallel
 
 __global__ void Uniqueness_kernel(size_t nSampled, float* txSrcData, float* txDstSamples, float* outData)
@@ -97,6 +97,7 @@ __global__ void Uniqueness_kernel(size_t nSampled, float* txSrcData, float* txDs
 			*/
 			for (size_t s = 0ULL; s < nSampled; s++) {
 				sumDist = 0.0f;
+				sumDist -= d_xIntercept;
 				sumDist -= fabsf(txSrcPixel0 - txDstSamples[s * 32ULL + 0ULL]);
 				sumDist -= fabsf(txSrcPixel1 - txDstSamples[s * 32ULL + 1ULL]);
 				sumDist -= fabsf(txSrcPixel2 - txDstSamples[s * 32ULL + 2ULL]);
@@ -230,26 +231,32 @@ int CUDAUniqueness(CBAParams& p)
 	CUDA(cudaMemcpyToSymbol(d_nCols, &(p.nCols), sizeof(uint)));
 	CUDA(cudaMemcpyToSymbol(d_nColsAligned, &(nColsAligned), sizeof(uint)));
 	CUDA(cudaMemcpyToSymbol(d_noData, &(txNoData), sizeof(float)));
+	CUDA(cudaMemcpyToSymbol(d_xIntercept, &(p.xIntercept), sizeof(float)));
+
 	CUDA(cudaMemcpy(d_txDstSamples, h_txDstSamples.get(), nSampled * p.maxTxGrids * sizeof(float), cudaMemcpyHostToDevice));
 
 	//Process each row on the GPU
 	std::cout << "Processing " << p.nCells << " grid cells on the GPU\n";
+
+	//Overlap reading txSrc rows and processing
+	//Read in txSrc rows and copy to device
+	for (uint tx = 0; tx < p.nTxGrids; tx++)
+		p.txSrcGSs[tx].read((char*)&(h_txSrcData[tx * nColsAligned]), p.nCols * sizeof(float));
+
 	for (uint r = 0; r < p.nRows; r++) {
 		msgProgress("Percent complete: ", r * 100 / p.nRows);
 
-		//Set the output row to all 0
-		CUDA(cudaMemset(d_outData, 0, nColsAligned * sizeof(float)));
-
-		//Read in txSrc rows and copy to device
-		for (uint tx = 0; tx < p.nTxGrids; tx++)
-			p.txSrcGSs[tx].read((char*)&(h_txSrcData[tx * nColsAligned]), p.nCols * sizeof(float));
-		
 		//Copy txSrc rows to device
 		CUDA(cudaMemcpy(d_txSrcData, h_txSrcData.get(), nColsAligned * p.maxTxGrids * sizeof(float), cudaMemcpyHostToDevice));
 
 		//Call kernel to calculate Sij for all pixels in the row
-		Uniqueness_kernel <<< gridDim, blockDim >>> (size_t(nSampled), d_txSrcData, d_txDstSamples, d_outData);
+		Uniqueness_kernel << < gridDim, blockDim >> > (size_t(nSampled), d_txSrcData, d_txDstSamples, d_outData);
 
+		//Read in txSrc rows and copy to device
+		if (r + 1 < p.nRows) {
+			for (uint tx = 0; tx < p.nTxGrids; tx++)
+				p.txSrcGSs[tx].read((char*)&(h_txSrcData[tx * nColsAligned]), p.nCols * sizeof(float));
+		}
 		//Copy output row from device to host then write to disk
 		CUDA(cudaMemcpy(h_outData.get(), d_outData, nColsAligned * sizeof(float), cudaMemcpyDeviceToHost));
 		p.outUniquenessGS.write((const char*)h_outData.get(), p.nCols * sizeof(float));

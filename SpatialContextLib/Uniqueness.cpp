@@ -28,6 +28,8 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include <climits>
 #include <cmath>
 
+//TODO change sampleRate to 0-1 rather than interval
+
 //External CUDA functions defined in Common.cuh
 extern bool CUDASetDevice(int d);
 extern bool CUDAGetGlobalMem(size_t& globMem, int d);
@@ -35,6 +37,7 @@ extern bool CUDAGetGlobalMem(size_t& globMem, int d);
 //External CUDA function defined in ResilienceDenominator.cu
 extern int CUDAUniqueness(CBAParams& params);
 
+//TODO this should be moved to the gstream class or function liberary
 //Get the number of data cells in a flt grid
 bool GetnDataCells(const std::string& FN, ull& nDataCells)
 {
@@ -83,6 +86,9 @@ int Uniqueness(const std::string& paramFN, CBAParams& params) {
 	GetParam(paramFN, "RESILIENCE", "SAMPLERATE", params.sampleRate);
 	GetParam(paramFN, "RESILIENCE", "MAXSAMPLES", params.maxSamples);
 	if (!GetParam(paramFN, "RESILIENCE", "NTXGRIDS", params.nTxGrids)) return msgErrorStr(-1, "NTXGRIDS", paramFN);
+
+	if (!GetParam(paramFN, "RESILIENCE", "XINTERCEPT", params.xIntercept)) params.xIntercept = 0.0f;
+
 
 	params.maxTxGrids = 32;
 
@@ -139,6 +145,7 @@ int Uniqueness(const std::string& paramFN, CBAParams& params) {
 	std::cout << "Sample Rate: \t\t" << params.sampleRate << "\n";
 	std::cout << "Max Samples: \t\t" << params.maxSamples << "\n";
 	std::cout << "Sample Step: \t\t" << params.sampleStep << "\n";
+	std::cout << "x intercept: \t\t" << params.xIntercept << "\n";
 
 	//Call CUDA Uniqueness function
 	try {
