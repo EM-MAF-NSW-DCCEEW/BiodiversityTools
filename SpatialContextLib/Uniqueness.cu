@@ -30,7 +30,7 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "FileUtilsLib.h"
 
 //Sij = exp(b + sum(-|srcTxi - dstTxj|))
-//Dij = 1 - exp(b + sum(-|srcTxi - dstTxj|))
+//Dij = sum(1 - exp(b + sum(-|srcTxi - dstTxj|)))
 //This kernel function gets called on the device operating for every pixel in a row of data in parallel
 
 __global__ void Uniqueness_kernel(size_t nSampled, float* txSrcData, float* txDstSamples, float* outData)
@@ -38,101 +38,105 @@ __global__ void Uniqueness_kernel(size_t nSampled, float* txSrcData, float* txDs
 	size_t cell = size_t(blockIdx.x * blockDim.x + threadIdx.x);
 	size_t nColsAligned = size_t(d_nColsAligned);
 	float sumDist = 0.0f, sumDij = 0.0f;
+	size_t txAddress = cell;
 
 	//Check this thread is in the row
 	if (cell < d_nCols) {
 		/*
 		Get pixel txSrc data, unrolled to use registers rather than cached local memory. First txSrc value is checked for no data.
-		txSrcData are stored as end to end nColsAligned wide (pitched) grid data rows so that all 32 threads in a warp read consecutive data from a single coalesced 128byte memory transaction
+		txSrcData are stored as end to end nColsAligned wide (pitched) grid data rows so that all 32 threads in a warp should read consecutive data from a single coalesced 128byte memory transaction
 		First nColsAligned width in bytes is calculated then each line is compiled into two instructions, a 64 bit add incrementing the address by nColsAligned width then a load
 
-		Each line is compiled into two PTX instructions:
+		(Current PTX not reviewed) Each line was compiled into two PTX instructions:
 		add.s64 	txAddress, txPrevAddress, nColsAlignedBytes;
 		ld.global.f32 	txSrcVal, [txAddress];
 		*/
-		float txSrcPixel0 = txSrcData[cell];
-		if (txSrcPixel0 !=d_noData) {
-			float txSrcPixel1 = txSrcData[1ULL * nColsAligned + cell];
-			float txSrcPixel2 = txSrcData[2ULL * nColsAligned + cell];
-			float txSrcPixel3 = txSrcData[3ULL * nColsAligned + cell];
-			float txSrcPixel4 = txSrcData[4ULL * nColsAligned + cell];
-			float txSrcPixel5 = txSrcData[5ULL * nColsAligned + cell];
-			float txSrcPixel6 = txSrcData[6ULL * nColsAligned + cell];
-			float txSrcPixel7 = txSrcData[7ULL * nColsAligned + cell];
-			float txSrcPixel8 = txSrcData[8ULL * nColsAligned + cell];
-			float txSrcPixel9 = txSrcData[9ULL * nColsAligned + cell];
-			float txSrcPixel10 = txSrcData[10ULL * nColsAligned + cell];
-			float txSrcPixel11 = txSrcData[11ULL * nColsAligned + cell];
-			float txSrcPixel12 = txSrcData[12ULL * nColsAligned + cell];
-			float txSrcPixel13 = txSrcData[13ULL * nColsAligned + cell];
-			float txSrcPixel14 = txSrcData[14ULL * nColsAligned + cell];
-			float txSrcPixel15 = txSrcData[15ULL * nColsAligned + cell];
-			float txSrcPixel16 = txSrcData[16ULL * nColsAligned + cell];
-			float txSrcPixel17 = txSrcData[17ULL * nColsAligned + cell];
-			float txSrcPixel18 = txSrcData[18ULL * nColsAligned + cell];
-			float txSrcPixel19 = txSrcData[19ULL * nColsAligned + cell];
-			float txSrcPixel20 = txSrcData[20ULL * nColsAligned + cell];
-			float txSrcPixel21 = txSrcData[21ULL * nColsAligned + cell];
-			float txSrcPixel22 = txSrcData[22ULL * nColsAligned + cell];
-			float txSrcPixel23 = txSrcData[23ULL * nColsAligned + cell];
-			float txSrcPixel24 = txSrcData[24ULL * nColsAligned + cell];
-			float txSrcPixel25 = txSrcData[25ULL * nColsAligned + cell];
-			float txSrcPixel26 = txSrcData[26ULL * nColsAligned + cell];
-			float txSrcPixel27 = txSrcData[27ULL * nColsAligned + cell];
-			float txSrcPixel28 = txSrcData[28ULL * nColsAligned + cell];
-			float txSrcPixel29 = txSrcData[29ULL * nColsAligned + cell];
-			float txSrcPixel30 = txSrcData[30ULL * nColsAligned + cell];
-			float txSrcPixel31 = txSrcData[31ULL * nColsAligned + cell];
-
+		float txSrcPixel0 = txSrcData[txAddress];
+		if (txSrcPixel0 != d_noData) {
+			float txSrcPixel1 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel2 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel3 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel4 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel5 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel6 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel7 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel8 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel9 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel10 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel11 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel12 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel13 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel14 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel15 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel16 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel17 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel18 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel19 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel20 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel21 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel22 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel23 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel24 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel25 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel26 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel27 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel28 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel29 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel30 = txSrcData[txAddress += nColsAligned];
+			float txSrcPixel31 = txSrcData[txAddress += nColsAligned];
+			
 			/*
 			Get txSrc - txDst distances, subtracting from 0, also manually unrolled for tx
-			All 32 threads in a warp read txDst from the same address for each tx which should be then broadcast only once to all threads
-			As the addresses for each txDst are consecutive they're cached in a single coalesced 128byte memory transaction and should be hit in L1 (or L2) for 1..31
+			All 32 threads in a warp read txDst from the same address for each tx which should be  broadcast only once to all threads
+			As the addresses for each txDst are consecutive they should be cached in a single coalesced 128byte memory transaction and hit in L1 (or L2) for 1..31
 
-			Each line is compiled into four PTX instructions:
+			(Current PTX not reviewed) Each line was compiled into four PTX instructions:
 			ld.global.f32 	txDstVal, [txDstSamples + txByteOffset];
 			sub.f32 	txDif, txSrcVal, txDstVal;
 			abs.f32 	txAbsDif, txDif;
 			sub.f32 	sumDist, sumDist, txAbsDif;
 			*/
 			for (size_t s = 0ULL; s < nSampled; s++) {
+				txAddress = s * 32ULL;
 				sumDist = 0.0f;
 				sumDist -= d_xIntercept;
-				sumDist -= fabsf(txSrcPixel0 - txDstSamples[s * 32ULL + 0ULL]);
-				sumDist -= fabsf(txSrcPixel1 - txDstSamples[s * 32ULL + 1ULL]);
-				sumDist -= fabsf(txSrcPixel2 - txDstSamples[s * 32ULL + 2ULL]);
-				sumDist -= fabsf(txSrcPixel3 - txDstSamples[s * 32ULL + 3ULL]);
-				sumDist -= fabsf(txSrcPixel4 - txDstSamples[s * 32ULL + 4ULL]);
-				sumDist -= fabsf(txSrcPixel5 - txDstSamples[s * 32ULL + 5ULL]);
-				sumDist -= fabsf(txSrcPixel6 - txDstSamples[s * 32ULL + 6ULL]);
-				sumDist -= fabsf(txSrcPixel7 - txDstSamples[s * 32ULL + 7ULL]);
-				sumDist -= fabsf(txSrcPixel8 - txDstSamples[s * 32ULL + 8ULL]);
-				sumDist -= fabsf(txSrcPixel9 - txDstSamples[s * 32ULL + 9ULL]);
-				sumDist -= fabsf(txSrcPixel10 - txDstSamples[s * 32ULL + 10ULL]);
-				sumDist -= fabsf(txSrcPixel11 - txDstSamples[s * 32ULL + 11ULL]);
-				sumDist -= fabsf(txSrcPixel12 - txDstSamples[s * 32ULL + 12ULL]);
-				sumDist -= fabsf(txSrcPixel13 - txDstSamples[s * 32ULL + 13ULL]);
-				sumDist -= fabsf(txSrcPixel14 - txDstSamples[s * 32ULL + 14ULL]);
-				sumDist -= fabsf(txSrcPixel15 - txDstSamples[s * 32ULL + 15ULL]);
-				sumDist -= fabsf(txSrcPixel16 - txDstSamples[s * 32ULL + 16ULL]);
-				sumDist -= fabsf(txSrcPixel17 - txDstSamples[s * 32ULL + 17ULL]);
-				sumDist -= fabsf(txSrcPixel18 - txDstSamples[s * 32ULL + 18ULL]);
-				sumDist -= fabsf(txSrcPixel19 - txDstSamples[s * 32ULL + 19ULL]);
-				sumDist -= fabsf(txSrcPixel20 - txDstSamples[s * 32ULL + 20ULL]);
-				sumDist -= fabsf(txSrcPixel21 - txDstSamples[s * 32ULL + 21ULL]);
-				sumDist -= fabsf(txSrcPixel22 - txDstSamples[s * 32ULL + 22ULL]);
-				sumDist -= fabsf(txSrcPixel23 - txDstSamples[s * 32ULL + 23ULL]);
-				sumDist -= fabsf(txSrcPixel24 - txDstSamples[s * 32ULL + 24ULL]);
-				sumDist -= fabsf(txSrcPixel25 - txDstSamples[s * 32ULL + 25ULL]);
-				sumDist -= fabsf(txSrcPixel26 - txDstSamples[s * 32ULL + 26ULL]);
-				sumDist -= fabsf(txSrcPixel27 - txDstSamples[s * 32ULL + 27ULL]);
-				sumDist -= fabsf(txSrcPixel28 - txDstSamples[s * 32ULL + 28ULL]);
-				sumDist -= fabsf(txSrcPixel29 - txDstSamples[s * 32ULL + 29ULL]);
-				sumDist -= fabsf(txSrcPixel30 - txDstSamples[s * 32ULL + 30ULL]);
-				sumDist -= fabsf(txSrcPixel31 - txDstSamples[s * 32ULL + 31ULL]);
+				sumDist -= fabsf(txSrcPixel0 - txDstSamples[txAddress + 0ULL]);
+				sumDist -= fabsf(txSrcPixel1 - txDstSamples[txAddress + 1ULL]);
+				sumDist -= fabsf(txSrcPixel2 - txDstSamples[txAddress + 2ULL]);
+				sumDist -= fabsf(txSrcPixel3 - txDstSamples[txAddress + 3ULL]);
+				sumDist -= fabsf(txSrcPixel4 - txDstSamples[txAddress + 4ULL]);
+				sumDist -= fabsf(txSrcPixel5 - txDstSamples[txAddress + 5ULL]);
+				sumDist -= fabsf(txSrcPixel6 - txDstSamples[txAddress + 6ULL]);
+				sumDist -= fabsf(txSrcPixel7 - txDstSamples[txAddress + 7ULL]);
+				sumDist -= fabsf(txSrcPixel8 - txDstSamples[txAddress + 8ULL]);
+				sumDist -= fabsf(txSrcPixel9 - txDstSamples[txAddress + 9ULL]);
+				sumDist -= fabsf(txSrcPixel10 - txDstSamples[txAddress + 10ULL]);
+				sumDist -= fabsf(txSrcPixel11 - txDstSamples[txAddress + 11ULL]);
+				sumDist -= fabsf(txSrcPixel12 - txDstSamples[txAddress + 12ULL]);
+				sumDist -= fabsf(txSrcPixel13 - txDstSamples[txAddress + 13ULL]);
+				sumDist -= fabsf(txSrcPixel14 - txDstSamples[txAddress + 14ULL]);
+				sumDist -= fabsf(txSrcPixel15 - txDstSamples[txAddress + 15ULL]);
+				sumDist -= fabsf(txSrcPixel16 - txDstSamples[txAddress + 16ULL]);
+				sumDist -= fabsf(txSrcPixel17 - txDstSamples[txAddress + 17ULL]);
+				sumDist -= fabsf(txSrcPixel18 - txDstSamples[txAddress + 18ULL]);
+				sumDist -= fabsf(txSrcPixel19 - txDstSamples[txAddress + 19ULL]);
+				sumDist -= fabsf(txSrcPixel20 - txDstSamples[txAddress + 20ULL]);
+				sumDist -= fabsf(txSrcPixel21 - txDstSamples[txAddress + 21ULL]);
+				sumDist -= fabsf(txSrcPixel22 - txDstSamples[txAddress + 22ULL]);
+				sumDist -= fabsf(txSrcPixel23 - txDstSamples[txAddress + 23ULL]);
+				sumDist -= fabsf(txSrcPixel24 - txDstSamples[txAddress + 24ULL]);
+				sumDist -= fabsf(txSrcPixel25 - txDstSamples[txAddress + 25ULL]);
+				sumDist -= fabsf(txSrcPixel26 - txDstSamples[txAddress + 26ULL]);
+				sumDist -= fabsf(txSrcPixel27 - txDstSamples[txAddress + 27ULL]);
+				sumDist -= fabsf(txSrcPixel28 - txDstSamples[txAddress + 28ULL]);
+				sumDist -= fabsf(txSrcPixel29 - txDstSamples[txAddress + 29ULL]);
+				sumDist -= fabsf(txSrcPixel30 - txDstSamples[txAddress + 30ULL]);
+				sumDist -= fabsf(txSrcPixel31 - txDstSamples[txAddress + 31ULL]);
+
 				//Calculate Dij for this pixel
 				sumDij += 1.0 - __expf(sumDist);
 			}
+			
 			//Write Dij to the pixel in the output row
 			outData[cell] = sumDij;
 		}
@@ -149,7 +153,7 @@ int CUDAUniqueness(CBAParams& p)
 	float* d_txDstSamples;
 	float* d_txSrcData;
 	float* d_outData;
-	uint nThreads = 512;
+	uint nThreads = 256;
 	uint nBlocks = p.nCols / nThreads + 1;
 	dim3 blockDim{ nThreads, 1U, 1U };
 	dim3 gridDim{ nBlocks, 1U, 1U };

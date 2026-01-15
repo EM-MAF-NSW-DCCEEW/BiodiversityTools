@@ -29,6 +29,9 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include "Parameters.h"
 #include "FileUtilsLib.h"
 
+//TODO move habitat from out of txSrcData and txDstSamples
+//Adopt updates from Uniqueness.cu 
+
 //Sij = sum(exp(sum(-|srcTxi - dstTxj|)))
 //This kernel function gets called on the device operating for every pixel in a row of data in parallel
 //For 25 tx grids and 500,000 samples this performs 888,427 billion subtractions!

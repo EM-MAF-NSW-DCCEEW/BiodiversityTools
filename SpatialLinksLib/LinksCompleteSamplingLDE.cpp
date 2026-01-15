@@ -109,15 +109,15 @@ int LinksCompleteSamplingLDE_ST(LinksParams& p) {
 	int xOffset = 0;
 	double nAccumCost = 0.0;
 	double srcDstHab = 1.0;
-	double d_e;
-	float pathValue;
+	//double d_e;
+	//float pathValue;
 	int n, nx, ny;
 
 	//Initialise CellNodes
 	msgText("Allocating memory");
 	CellNodeGrid nodes(windowSize, searchRadiusCellsSqrd);
 	CellNodeHeap minHeap(windowSize * windowSize);
-	CellNode* nCell, * cCell, * pCell;
+	CellNode* nCell, * cCell;// , * pCell;
 
 	//Init data
 	std::vector<std::vector<float>> cstData(windowSize, std::vector<float>(p.nCols, p.noData));
@@ -246,7 +246,7 @@ int LinksCompleteSamplingLDE_ST(LinksParams& p) {
 			}//End while(true)
 
 			 //Context Focal Cell Mod
-			if (p.doContext) cxtData[windowCenter][focalCol] *= p.useFCellHabWeight ? habData[windowCenter][focalCol] : 1.0F;
+			//if (p.doContext) cxtData[windowCenter][focalCol] *= p.useFCellHabWeight ? habData[windowCenter][focalCol] : 1.0F;
 
 		}//End for each focalCol
 
