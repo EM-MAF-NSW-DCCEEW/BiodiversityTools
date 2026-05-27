@@ -5,3 +5,5 @@
 /.vs
 /build
 /out
+/SpatialLinksLib/LinksCompleteSamplingSimilarity.cpp
+/SpatialLinksLib/LinksCompleteSamplingSimilarity.h
