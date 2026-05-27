@@ -1,0 +1,27 @@
+/*
+GDMSimToPixel.h - Experimental functions for calculating GDM similarity to a single pixel
+Copyright(C) 2023 State of New South Wales and Department of Planning and Environment
+Author: Jamie Love, SEI Metrics and Forecasting
+
+This program is free software : you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#pragma once
+#ifndef _GDM_SIM_TO_PIXEL_H_
+#define _GDM_SIM_TO_PIXEL_H_
+#include "Parameters.h"
+
+//Context CBA Functions
+int GDMSimToPixel(const std::string & pFN, CBAParams &params);
+#endif
