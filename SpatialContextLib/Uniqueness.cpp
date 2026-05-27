@@ -21,7 +21,7 @@ along with this program.If not, see <https://www.gnu.org/licenses/>.
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include "uniqueness.h"
+#include "Uniqueness.h"
 #include "Petals.h"
 #include "FileUtilsLib.h"
 

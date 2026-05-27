@@ -130,8 +130,8 @@ int CreateLookupAndTranslateFromFiles(std::map<int, std::vector<int2>> & lookup,
 		std::getline(lss, yStr);
 		lookup[std::stoi(idStr)].push_back({ std::stoi(xStr), std::stoi(yStr) });
 		nPetals = max(nPetals, std::stoi(idStr));
-		xMax = max(xMax, (uint) std::stoi(xStr));
-		yMax = max(yMax, (uint) std::stoi(yStr));
+		xMax = max(xMax, (int) std::stoi(xStr));
+		yMax = max(yMax, (int) std::stoi(yStr));
 	}
 
 	//Read translate file
